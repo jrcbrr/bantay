@@ -2,9 +2,10 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { AlertTriangle, ChevronRight } from 'lucide-react'
 import { markPaid } from '@/db/actions.ts'
+import { db } from '@/db/db.ts'
 import { baonWeekdays, useBudgets, useLookups, type Money } from '@/db/hooks.ts'
 import { budgetProgress, flowBetween, periodRange } from '@/domain/budgets.ts'
-import { daysBetween, fromISODate, today } from '@/domain/dates.ts'
+import { addDays, daysBetween, fromISODate, toISODate, today } from '@/domain/dates.ts'
 import { averageBaon, firstShortfall, forecast, spendingPace } from '@/domain/forecast.ts'
 import { monthlyCost } from '@/domain/recurring.ts'
 import type { DashboardCardId } from '@/domain/types.ts'
@@ -63,11 +64,37 @@ function BalanceCard({ money }: CardProps) {
   )
 }
 
+/** Mark today as a no-baon day (holiday, no class), or undo it. Old dates are pruned. */
+async function toggleNoBaonToday(current: string[] | undefined) {
+  const todayISO = toISODate(today())
+  const weekAgo = toISODate(addDays(today(), -7))
+  const kept = (current ?? []).filter((d) => d >= weekAgo)
+  const next = kept.includes(todayISO) ? kept.filter((d) => d !== todayISO) : [...kept, todayISO]
+  await db.settings.update('app', { skipBaonDates: next })
+}
+
 function SafeCard({ money }: CardProps) {
-  const { safeToday, spentToday, upcomingBills } = money
+  const { safeToday, spentToday, upcomingBills, settings } = money
+  const todayISO = toISODate(today())
+  const usesDays = (settings?.allowanceCycle ?? 'days') === 'days'
+  const isBaonWeekday = (settings?.allowanceDays ?? [1, 2, 3, 4, 5]).includes(today().getDay())
+  const skipped = !!settings?.skipBaonDates?.includes(todayISO)
   return (
     <GlassCard className="bg-accent/90! dark:bg-accent/80! border-white/20! text-white">
-      <p className="text-sm text-white/75">Safe to spend today</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm text-white/75">Safe to spend today</p>
+        {usesDays && isBaonWeekday && (
+          <button
+            onClick={() => void toggleNoBaonToday(settings?.skipBaonDates)}
+            aria-pressed={skipped}
+            className={`-mt-1 shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition ${
+              skipped ? 'text-accent bg-white' : 'bg-white/15 text-white'
+            }`}
+          >
+            {skipped ? '✓ No baon today' : 'No baon today?'}
+          </button>
+        )}
+      </div>
       <Amount value={safeToday} className="mt-1 block text-3xl font-semibold tracking-tight" />
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/80">
         <span>
@@ -78,6 +105,7 @@ function SafeCard({ money }: CardProps) {
             Set aside for bills: <Amount value={upcomingBills} />
           </span>
         )}
+        {skipped && <span>Today's spending comes out of your last baon</span>}
       </div>
     </GlassCard>
   )

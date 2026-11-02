@@ -4,7 +4,8 @@ import type { Centavos, ISODate, Recurring, Transaction } from './types.ts'
 
 /**
  * Average daily spending over the last `lookback` days (today excluded, since it's partial).
- * Bills logged from recurring items are left out: the forecast adds those on their due dates.
+ * Bills logged from recurring items are left out (the forecast adds those on their due dates),
+ * and so is lending money, which isn't everyday spending.
  */
 export function spendingPace(txs: readonly Transaction[], today: Date, lookback = 30): Centavos {
   const from = toISODate(addDays(today, -lookback))
@@ -14,7 +15,7 @@ export function spendingPace(txs: readonly Transaction[], today: Date, lookback 
   // If you only started tracking recently, average over the days you've actually tracked.
   const tracked = Math.min(lookback, Math.max(1, daysBetween(fromISODate(firstTx), today)))
   const spent = txs
-    .filter((t) => t.type === 'expense' && !t.recurringId && t.date >= from && t.date < to)
+    .filter((t) => t.type === 'expense' && !t.recurringId && !t.debtId && t.date >= from && t.date < to)
     .reduce((s, t) => s + t.amount, 0)
   return Math.round(spent / tracked)
 }

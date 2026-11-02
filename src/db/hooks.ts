@@ -10,10 +10,13 @@ import type {
   Asset,
   Budget,
   Category,
+  Debt,
   Goal,
+  Installment,
   Receipt,
   Recurring,
   Settings,
+  Template,
   Transaction,
 } from '@/domain/types.ts'
 import { db } from './db.ts'
@@ -95,6 +98,18 @@ export function usePendingReceipts(): Receipt[] {
   )
 }
 
+export function useDebts(): Debt[] {
+  return useLiveQuery(async () => (await db.debts.toArray()).sort((a, b) => b.createdAt - a.createdAt), []) ?? EMPTY
+}
+
+export function useInstallments(): Installment[] {
+  return useLiveQuery(async () => (await db.installments.toArray()).sort((a, b) => a.createdAt - b.createdAt), []) ?? EMPTY
+}
+
+export function useTemplates(): Template[] {
+  return useLiveQuery(() => db.templates.toArray(), []) ?? EMPTY
+}
+
 /** Weekdays baon arrives on, for the forecast. Monthly baon isn't weekday-based, so it's left out. */
 export function baonWeekdays(settings: Settings | undefined): number[] {
   switch (settings?.allowanceCycle ?? 'days') {
@@ -134,6 +149,7 @@ export function useMoney() {
       weekday: settings?.allowanceWeekday ?? 1,
       dayOfMonth: settings?.allowanceDayOfMonth ?? 1,
       days: settings?.allowanceDays ?? [1, 2, 3, 4, 5],
+      skip: settings?.skipBaonDates,
     })
     // Bills due before the next baon are set aside first.
     const upcomingBills = billsDueBefore(recurring, cycle.nextAllowance)

@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, Tags } from 'lucide-react'
+import { ChevronRight, Tags, Zap } from 'lucide-react'
+import { BackupCard } from './BackupCard.tsx'
+import { PinCard } from './PinCard.tsx'
 import { db } from '@/db/db.ts'
 import { useSettings } from '@/db/hooks.ts'
 import type { AllowanceCycle, Settings } from '@/domain/types.ts'
@@ -94,12 +96,23 @@ export function SettingsPage() {
           )}
         </GlassCard>
 
-        <Link to="/settings/categories" className="glass flex items-center gap-3 rounded-3xl p-5">
-          <Tags size={20} className="text-accent dark:text-accent-soft" />
-          <span className="flex-1 font-medium">Categories</span>
-          <span className="text-sm text-ink/50 dark:text-white/50">Add, rename, reorder</span>
-          <ChevronRight size={18} className="text-ink/30 dark:text-white/30" />
-        </Link>
+        <GlassCard className="p-2!">
+          <Link to="/settings/categories" className="flex items-center gap-3 rounded-2xl px-3 py-3">
+            <Tags size={20} className="text-accent dark:text-accent-soft" />
+            <span className="flex-1 font-medium">Categories</span>
+            <span className="text-sm text-ink/50 dark:text-white/50">Add, rename, reorder</span>
+            <ChevronRight size={18} className="text-ink/30 dark:text-white/30" />
+          </Link>
+          <Link to="/settings/templates" className="flex items-center gap-3 rounded-2xl px-3 py-3">
+            <Zap size={20} className="text-accent dark:text-accent-soft" />
+            <span className="flex-1 font-medium">Quick templates</span>
+            <span className="text-sm text-ink/50 dark:text-white/50">Baon, fare, lunch…</span>
+            <ChevronRight size={18} className="text-ink/30 dark:text-white/30" />
+          </Link>
+        </GlassCard>
+
+        <BackupCard />
+        <PinCard />
 
         <GlassCard>
           <Field label="Appearance">
@@ -116,7 +129,7 @@ export function SettingsPage() {
         </GlassCard>
 
         <p className="text-center text-xs text-ink/40 dark:text-white/40">
-          All data stays on this device. Backup & PIN lock coming soon.
+          Bantay works offline. Your data stays on this device and is never uploaded anywhere.
         </p>
       </div>
     </>

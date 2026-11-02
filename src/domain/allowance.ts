@@ -9,6 +9,8 @@ export interface CycleConfig {
   dayOfMonth: number
   /** Baon weekdays, 0 = Sunday … 6 = Saturday (days). Empty means every day. */
   days?: readonly number[]
+  /** Specific dates with no baon (holidays, no class), `days` cycle only. */
+  skip?: readonly ISODate[]
 }
 
 export interface CycleWindow {
@@ -30,11 +32,11 @@ export function currentCycle(now: Date, cfg: CycleConfig): CycleWindow {
     case 'days': {
       // e.g. school days: baon Mon–Fri, so Friday's baon has to last through Sunday.
       const days = cfg.days?.length ? cfg.days : [0, 1, 2, 3, 4, 5, 6]
-      const isBaonDay = (d: Date) => days.includes(d.getDay())
+      const isBaonDay = (d: Date) => days.includes(d.getDay()) && !cfg.skip?.includes(toISODate(d))
       let back = 0
-      while (back < 7 && !isBaonDay(addDays(day, -back))) back++
+      while (back < 14 && !isBaonDay(addDays(day, -back))) back++
       let fwd = 1
-      while (fwd < 7 && !isBaonDay(addDays(day, fwd))) fwd++
+      while (fwd < 14 && !isBaonDay(addDays(day, fwd))) fwd++
       start = addDays(day, -back)
       next = addDays(day, fwd)
       break
