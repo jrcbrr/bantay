@@ -32,6 +32,8 @@ export interface Category {
   kind: CategoryKind
   icon: string
   color: string
+  /** Sort position in pickers. */
+  order?: number
   archived?: boolean
 }
 

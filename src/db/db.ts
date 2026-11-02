@@ -11,7 +11,7 @@ import type {
   Template,
   Transaction,
 } from '@/domain/types.ts'
-import { defaultAccountLooks, seed } from './seed.ts'
+import { defaultAccountLooks, defaultCategories, seed } from './seed.ts'
 
 export class BantayDB extends Dexie {
   declare accounts: EntityTable<Account, 'id'>
@@ -60,6 +60,17 @@ export class BantayDB extends Dexie {
               a.color = preset.color
             }
           })
+      })
+    // v3: bigger default category set. Adds new ones, refreshes order/look of defaults,
+    // leaves any categories you created untouched.
+    this.version(3)
+      .stores({})
+      .upgrade(async (tx) => {
+        const table = tx.table<Category, string>('categories')
+        for (const cat of defaultCategories) {
+          const existing = await table.get(cat.id)
+          await table.put(existing ? { ...existing, ...cat } : cat)
+        }
       })
     this.on('populate', (tx) => seed(tx))
   }

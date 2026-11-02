@@ -13,7 +13,15 @@ export function useAccounts(): Account[] {
 }
 
 export function useCategories(): Category[] {
-  return useLiveQuery(() => db.categories.toArray(), []) ?? EMPTY
+  return (
+    useLiveQuery(
+      async () =>
+        (await db.categories.toArray())
+          .filter((c) => !c.archived)
+          .sort((a, b) => (a.order ?? 999) - (b.order ?? 999)),
+      [],
+    ) ?? EMPTY
+  )
 }
 
 export function useTransactions(): Transaction[] {

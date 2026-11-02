@@ -1,0 +1,67 @@
+import {
+  Award,
+  BookOpen,
+  Briefcase,
+  Bus,
+  CircleEllipsis,
+  CirclePlus,
+  Coffee,
+  Cookie,
+  Gamepad2,
+  Gift,
+  GraduationCap,
+  HandCoins,
+  HeartHandshake,
+  House,
+  PartyPopper,
+  Pill,
+  Printer,
+  Repeat,
+  Shirt,
+  ShoppingBag,
+  ShoppingBasket,
+  Sparkles,
+  Tag,
+  Undo2,
+  Users,
+  Utensils,
+  Wifi,
+  type LucideIcon,
+} from 'lucide-react'
+import type { Category } from '@/domain/types.ts'
+
+/** Static map so only these icons are bundled (keeps the offline cache small). */
+export const categoryIcons: Record<string, LucideIcon> = {
+  award: Award,
+  'book-open': BookOpen,
+  briefcase: Briefcase,
+  bus: Bus,
+  'circle-ellipsis': CircleEllipsis,
+  'circle-plus': CirclePlus,
+  coffee: Coffee,
+  cookie: Cookie,
+  'gamepad-2': Gamepad2,
+  gift: Gift,
+  'graduation-cap': GraduationCap,
+  'hand-coins': HandCoins,
+  'heart-handshake': HeartHandshake,
+  house: House,
+  'party-popper': PartyPopper,
+  pill: Pill,
+  printer: Printer,
+  repeat: Repeat,
+  shirt: Shirt,
+  'shopping-bag': ShoppingBag,
+  'shopping-basket': ShoppingBasket,
+  sparkles: Sparkles,
+  tag: Tag,
+  'undo-2': Undo2,
+  users: Users,
+  utensils: Utensils,
+  wifi: Wifi,
+}
+
+export function CategoryIcon({ category, size = 16 }: { category: Pick<Category, 'icon' | 'color'>; size?: number }) {
+  const Icon = categoryIcons[category.icon] ?? CircleEllipsis
+  return <Icon size={size} style={{ color: category.color }} aria-hidden className="shrink-0" />
+}

@@ -8,6 +8,7 @@ import { toISODate, today } from '@/domain/dates.ts'
 import { parseAmount } from '@/domain/money.ts'
 import type { Template, TransactionType } from '@/domain/types.ts'
 import { AccountIcon } from '@/ui/AccountIcon.tsx'
+import { CategoryIcon } from '@/ui/CategoryIcon.tsx'
 
 interface Props {
   open: boolean
@@ -170,7 +171,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
             ) : (
               <Section title="Category">
                 <Chips
-                  items={visibleCategories.map((c) => [c.id, c.name])}
+                  items={visibleCategories.map((c) => [c.id, c.name, <CategoryIcon category={c} />])}
                   value={categoryId}
                   onChange={(v) => setCategoryId(v === categoryId ? '' : v)}
                 />
