@@ -51,8 +51,8 @@ export function ForecastChart({ points }: { points: ForecastPoint[] }) {
       >
         <defs>
           <linearGradient id="forecast-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="#2f6bff" stopOpacity="0.22" />
-            <stop offset="1" stopColor="#2f6bff" stopOpacity="0" />
+            <stop offset="0" stopColor="var(--color-accent)" stopOpacity="0.22" />
+            <stop offset="1" stopColor="var(--color-accent)" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -65,7 +65,7 @@ export function ForecastChart({ points }: { points: ForecastPoint[] }) {
         )}
 
         <path d={area} fill="url(#forecast-fill)" />
-        <path d={line} fill="none" stroke="#2f6bff" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={line} fill="none" stroke="var(--color-accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
 
         {ticks.map((i) => (
           <text
@@ -86,7 +86,7 @@ export function ForecastChart({ points }: { points: ForecastPoint[] }) {
               cx={x(hover)}
               cy={y(active.balance)}
               r={4}
-              fill="#2f6bff"
+              fill="var(--color-accent)"
               className="stroke-paper dark:stroke-ink"
               strokeWidth={2}
             />

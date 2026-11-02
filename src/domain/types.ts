@@ -204,6 +204,10 @@ export interface Settings {
   allowanceDayOfMonth: number
   /** Baon days you're not getting baon (holidays, no class). */
   skipBaonDates?: ISODate[]
+  /** Accent color (hex). Default Bantay blue. */
+  accent?: string
+  /** Learn category rules from notes you type (default on). */
+  learnRules?: boolean
   /** Round each expense up and move the difference to a savings account. */
   roundUp?: { toPesos: number; accountId: ID }
   /** Last time a backup file was downloaded (epoch ms). */

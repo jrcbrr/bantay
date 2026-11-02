@@ -1,4 +1,4 @@
-import Dexie, { type EntityTable } from 'dexie'
+import Dexie, { type EntityTable, type Table } from 'dexie'
 import type {
   Account,
   Asset,
@@ -15,6 +15,8 @@ import type {
   WishItem,
 } from '@/domain/types.ts'
 import type { Challenge, EventBudget } from '@/domain/planExtras.ts'
+import type { YearArchive } from '@/domain/archive.ts'
+import { starterRules, type CategoryRule } from '@/domain/rules.ts'
 import { debtCategoryIds, defaultAccountLooks, defaultCategories, defaultDashboard, seed } from './seed.ts'
 
 export class BantayDB extends Dexie {
@@ -33,6 +35,8 @@ export class BantayDB extends Dexie {
   declare events: EntityTable<EventBudget, 'id'>
   declare challenges: EntityTable<Challenge, 'id'>
   declare wishlist: EntityTable<WishItem, 'id'>
+  declare rules: EntityTable<CategoryRule, 'id'>
+  declare archives: EntityTable<YearArchive, 'id'>
 
   constructor(name = 'bantay') {
     super(name)
@@ -118,8 +122,25 @@ export class BantayDB extends Dexie {
       challenges: 'id, createdAt',
       wishlist: 'id, bought, createdAt',
     })
+    // v7: auto-categorize rules (with starters) and yearly archives.
+    this.version(7)
+      .stores({ rules: 'id, keyword', archives: 'id, year' })
+      .upgrade(async (tx) => {
+        await addStarterRules(tx.table('rules'))
+      })
     this.on('populate', (tx) => seed(tx))
   }
+}
+
+/** Add the starter keyword rules (only ones not already there). */
+export async function addStarterRules(table: Table<CategoryRule, string>): Promise<void> {
+  const existing = new Set((await table.toArray()).map((r) => r.keyword))
+  const now = Date.now()
+  await table.bulkAdd(
+    starterRules
+      .filter(([k]) => !existing.has(k))
+      .map(([keyword, categoryId], i) => ({ id: `starter-${keyword}`, keyword, categoryId, createdAt: now - 1000 + i })),
+  )
 }
 
 export const db = new BantayDB()

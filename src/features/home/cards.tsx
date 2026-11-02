@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { AlertTriangle, ChevronRight, Flame } from 'lucide-react'
 import { monthPeriod, noSpendStreaks, recap } from '@/domain/insights.ts'
 import { markPaid } from '@/db/actions.ts'
+import { showToast } from '@/app/toast.ts'
 import { db } from '@/db/db.ts'
 import { baonWeekdays, useBudgets, useLookups, type Money } from '@/db/hooks.ts'
 import { budgetProgress, flowBetween, periodRange } from '@/domain/budgets.ts'
@@ -293,7 +294,7 @@ function BillsCard({ money }: CardProps) {
                   </div>
                   <Amount value={r.type === 'income' ? r.amount : -r.amount} sign tone="auto" className="text-sm font-semibold" />
                   <button
-                    onClick={() => void markPaid(r)}
+                    onClick={async () => showToast(`${r.label} ${r.type === 'income' ? 'received' : 'paid'}`, await markPaid(r))}
                     className="rounded-full bg-ink/[0.05] px-3 py-1 text-xs font-semibold dark:bg-white/[0.08]"
                   >
                     {r.type === 'income' ? 'Got it' : 'Paid'}

@@ -8,6 +8,7 @@ import { ChallengeSheet, type ChallengeTarget } from './ChallengeSheet.tsx'
 import { EventSheet, type EventSheetTarget } from './EventSheet.tsx'
 import { WishSheet, priorityLabel, type WishTarget } from './WishSheet.tsx'
 import { markPaid } from '@/db/actions.ts'
+import { showToast } from '@/app/toast.ts'
 import { useBudgets, useChallenges, useEvents, useGoals, useLookups, useMoney, useWishlist } from '@/db/hooks.ts'
 import { budgetProgress } from '@/domain/budgets.ts'
 import { daysBetween, fromISODate, toISODate, today } from '@/domain/dates.ts'
@@ -380,7 +381,7 @@ function BillRow({ r, onEdit }: { r: Recurring; onEdit: () => void }) {
       </button>
       {r.active && (
         <button
-          onClick={() => void markPaid(r)}
+          onClick={async () => showToast(`${r.label} ${r.type === 'income' ? 'received' : 'paid'}`, await markPaid(r))}
           className="flex items-center gap-1 rounded-full bg-ink/[0.05] px-3 py-1.5 text-xs font-semibold dark:bg-white/[0.08]"
           title={r.type === 'income' ? 'Mark received: logs it and moves to the next date' : 'Mark paid: logs it and moves to the next date'}
         >

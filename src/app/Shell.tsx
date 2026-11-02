@@ -5,6 +5,7 @@ import { QuickAddSheet } from '@/features/quick-add/QuickAddSheet.tsx'
 import { useEffect } from 'react'
 import { useSettings } from '@/db/hooks.ts'
 import { GoalCelebration } from './GoalCelebration.tsx'
+import { Toaster } from './Toaster.tsx'
 import { LockScreen } from './LockScreen.tsx'
 import { useLock, watchVisibility } from './pin.ts'
 import { useSheets } from './sheets.ts'
@@ -104,6 +105,7 @@ export function Shell() {
 
       <QuickAddSheet />
       <GoalCelebration />
+      <Toaster />
     </div>
   )
 }

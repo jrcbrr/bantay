@@ -14,7 +14,8 @@
 ## Features
 
 **Everyday**
-- **Quick add** with account and category chips, plus templates for one-tap entries
+- **Quick add** with account and category chips, templates for one-tap entries, and **auto-categorize rules** (type "jollibee" in the note and Meals gets picked; it learns from you)
+- **Undo** after adding, editing, deleting or marking a bill paid
 - **Editable quick templates** for things you log every day (baon, fare, lunch)
 - **Safe to spend today**: what's left until your next baon, after setting aside bills due before then. The "No baon today" switch covers holidays and days without class.
 - **Receipts inbox**: snap a receipt now and log it later. The photo stays attached to the transaction.
@@ -22,8 +23,12 @@
 **Home dashboard**: cards you can reorder and hide (drag to reorder), covering balance, safe to spend, a 30-day forecast, money flow, budgets, upcoming bills, spendable vs savings, net worth, and recent activity.
 
 **Plan**
-- Weekly or monthly category budgets
-- Savings goals, either linked to an account or updated by hand
+- Weekly or monthly category budgets, each with its history
+- **Event budgets** for field trips, Christmas or birthdays
+- **Ipon challenge**: 52 weeks, daily, or custom, with a tick-off grid
+- **Wishlist** with "days of saving" estimates, and a **Can I afford it?** check
+- **Round-up savings**: spare change from each expense goes to savings
+- Savings goals, either linked to an account or updated by hand, with milestone celebrations
 - Recurring bills and subscriptions with one-tap *Paid*
 
 **Wealth**
@@ -32,14 +37,17 @@
 - Debts and IOUs, both ways, with partial repayments
 - An assets tracker showing gain or loss against what you paid
 
+**Insights**: monthly recap and year in review, where your money went, trends vs last month, income vs spending charts, baon by week, cost per school day, biggest expenses, and no-spend streaks
+
 **Activity**: search (notes, categories, accounts, amounts), filters, and a calendar view with daily totals
 
 **Privacy and safety**
 - Privacy mode hides every amount as `₱****`
 - PIN lock, stored as a PBKDF2 hash. It keeps others out but doesn't encrypt your data.
 - JSON backup and restore (validated before anything is replaced) and CSV export for spreadsheets
+- **Archive old years** into summaries to keep the app fast. Balances stay exact.
 
-Liquid glass UI in light and dark mode. Installable, and works fully offline.
+Liquid glass UI in light and dark mode with a choice of accent colors. Installable, and works fully offline.
 
 ## Stack
 

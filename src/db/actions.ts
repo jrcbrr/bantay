@@ -1,5 +1,6 @@
 import { toISODate, today } from '@/domain/dates.ts'
 import { advance } from '@/domain/recurring.ts'
+import { planArchive } from '@/domain/archive.ts'
 import { debtCategory, debtStatus, debtTxType, installmentStatus } from '@/domain/credit.ts'
 import type { Centavos, Debt, ID, ISODate, Installment, Recurring } from '@/domain/types.ts'
 import { db, newId } from './db.ts'
@@ -8,11 +9,13 @@ import { db, newId } from './db.ts'
  * Log one occurrence of a bill or recurring income as a real transaction
  * (so the money actually leaves or enters the account) and move it to its next due date.
  */
-export async function markPaid(r: Recurring): Promise<void> {
+export async function markPaid(r: Recurring): Promise<() => Promise<void>> {
   const todayISO = toISODate(today())
+  const txId = newId()
+  const previousDue = r.nextDue
   await db.transaction('rw', db.transactions, db.recurring, async () => {
     await db.transactions.add({
-      id: newId(),
+      id: txId,
       type: r.type,
       amount: r.amount,
       accountId: r.accountId,
@@ -25,6 +28,13 @@ export async function markPaid(r: Recurring): Promise<void> {
     })
     await db.recurring.update(r.id, { nextDue: advance(r.nextDue, r.frequency, r.anchorDay) })
   })
+  /** Undo: remove the logged payment and put the due date back. */
+  return async () => {
+    await db.transaction('rw', db.transactions, db.recurring, async () => {
+      await db.transactions.delete(txId)
+      await db.recurring.update(r.id, { nextDue: previousDue })
+    })
+  }
 }
 
 /** Skip one occurrence without logging money (e.g. a free month). */
@@ -138,4 +148,29 @@ export async function deleteInstallment(inst: Installment): Promise<void> {
     })
     await db.installments.delete(inst.id)
   })
+}
+
+/* ---------------- Archive old years ---------------- */
+
+/**
+ * Fold every transaction before `beforeYear` into account opening balances and a yearly summary.
+ * Balances stay identical. Receipts of archived transactions are removed (they're in your backup).
+ * Returns how many transactions were archived.
+ */
+export async function archiveBefore(beforeYear: number): Promise<number> {
+  let count = 0
+  await db.transaction('rw', [db.accounts, db.transactions, db.receipts, db.archives], async () => {
+    const [accounts, txs, existing] = await Promise.all([db.accounts.toArray(), db.transactions.toArray(), db.archives.toArray()])
+    const plan = planArchive(accounts, txs, beforeYear, existing)
+    for (const a of accounts) {
+      const next = plan.openingBalances.get(a.id)
+      if (next !== undefined && next !== a.openingBalance) await db.accounts.update(a.id, { openingBalance: next })
+    }
+    const receiptIds = plan.remove.map((t) => t.receiptId).filter((id): id is string => !!id)
+    await db.receipts.bulkDelete(receiptIds)
+    await db.transactions.bulkDelete(plan.remove.map((t) => t.id))
+    await db.archives.bulkPut(plan.summaries)
+    count = plan.remove.length
+  })
+  return count
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, Flame, Trophy } from 'lucide-react'
-import { baonWeekdays, useLookups, useMoney } from '@/db/hooks.ts'
+import { baonWeekdays, useArchives, useLookups, useMoney } from '@/db/hooks.ts'
 import { fromISODate, toISODate, today } from '@/domain/dates.ts'
 import {
   biggestExpenses,
@@ -60,6 +60,7 @@ function Change({ now, before, goodWhenDown = true }: { now: number; before: num
 export function InsightsPage() {
   const { transactions, settings } = useMoney()
   const lookups = useLookups()
+  const archives = useArchives()
   const [mode, setMode] = useState<Mode>('month')
   const [cursor, setCursor] = useState(() => ({ year: today().getFullYear(), month: today().getMonth() }))
 
@@ -128,6 +129,40 @@ export function InsightsPage() {
       </div>
 
       <div className="space-y-4">
+        {mode === 'year' && archives.find((a) => a.year === cursor.year) && (() => {
+          const a = archives.find((x) => x.year === cursor.year)!
+          const top = Object.entries(a.byCategory).sort((x, y) => y[1] - x[1]).slice(0, 5)
+          return (
+            <Card title={`${a.year}, archived`} aside={<span className={`text-xs ${muted}`}>{a.count} transactions</span>}>
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className={`text-xs ${muted}`}>Money in</p>
+                  <Amount value={a.income} className="font-semibold" />
+                </div>
+                <div>
+                  <p className={`text-xs ${muted}`}>Spent</p>
+                  <Amount value={a.expense} className="font-semibold" />
+                </div>
+                <div>
+                  <p className={`text-xs ${muted}`}>Saved</p>
+                  <Amount value={a.income - a.expense} className="font-semibold" />
+                </div>
+              </div>
+              {top.length > 0 && (
+                <ul className="mt-3 space-y-1 text-sm">
+                  {top.map(([id, amt]) => (
+                    <li key={id} className="flex justify-between">
+                      <span>{catName(id)}</span>
+                      <Amount value={amt} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className={`mt-3 text-xs ${muted}`}>Details for this year were archived. Restore a backup from before archiving to see them again.</p>
+            </Card>
+          )
+        })()}
+
         {/* Recap / year in review */}
         <GlassCard className="bg-accent/90! dark:bg-accent/80! border-white/20! text-white">
           <p className="text-sm text-white/75">{mode === 'month' ? `${label} recap` : `${label} in review`}</p>

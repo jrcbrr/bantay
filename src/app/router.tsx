@@ -8,6 +8,7 @@ import { SettingsPage } from '@/features/settings/SettingsPage.tsx'
 import { CategoriesPage } from '@/features/categories/CategoriesPage.tsx'
 import { TemplatesPage } from '@/features/templates/TemplatesPage.tsx'
 import { InsightsPage } from '@/features/insights/InsightsPage.tsx'
+import { RulesPage } from '@/features/settings/RulesPage.tsx'
 
 // Hash routing so deep links work on GitHub Pages and fully offline.
 export const router = createHashRouter([
@@ -22,6 +23,7 @@ export const router = createHashRouter([
       { path: 'settings', element: <SettingsPage /> },
       { path: 'settings/categories', element: <CategoriesPage /> },
       { path: 'settings/templates', element: <TemplatesPage /> },
+      { path: 'settings/rules', element: <RulesPage /> },
       // Old routes from before the rework
       { path: 'budget', element: <Navigate to="/plan" replace /> },
       { path: 'wallets', element: <Navigate to="/wealth" replace /> },

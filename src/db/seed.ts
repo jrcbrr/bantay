@@ -1,4 +1,5 @@
 import type { Transaction as DexieTx } from 'dexie'
+import { starterRules } from '@/domain/rules.ts'
 import type { Account, Category, DashboardCard, Settings, Template } from '@/domain/types.ts'
 
 const now = Date.now()
@@ -101,4 +102,8 @@ export async function seed(tx: DexieTx): Promise<void> {
   await tx.table('categories').bulkAdd(defaultCategories)
   await tx.table('templates').bulkAdd(templates)
   await tx.table('settings').add(settings)
+  const now = Date.now()
+  await tx.table('rules').bulkAdd(
+    starterRules.map(([keyword, categoryId], i) => ({ id: `starter-${keyword}`, keyword, categoryId, createdAt: now - 1000 + i })),
+  )
 }
