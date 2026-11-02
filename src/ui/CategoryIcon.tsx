@@ -65,3 +65,22 @@ export function CategoryIcon({ category, size = 16 }: { category: Pick<Category,
   const Icon = categoryIcons[category.icon] ?? CircleEllipsis
   return <Icon size={size} style={{ color: category.color }} aria-hidden className="shrink-0" />
 }
+
+export const categoryColors = [
+  '#ef4444',
+  '#f59e0b',
+  '#84cc16',
+  '#16a34a',
+  '#14b8a6',
+  '#0ea5e9',
+  '#2f6bff',
+  '#6366f1',
+  '#8b5cf6',
+  '#d946ef',
+  '#ec4899',
+  '#a16207',
+  '#64748b',
+  '#94a3b8',
+  '#0f766e',
+  '#27272a',
+]

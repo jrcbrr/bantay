@@ -12,6 +12,21 @@ export function useAccounts(): Account[] {
   return useLiveQuery(() => db.accounts.filter((a) => !a.archived).toArray(), []) ?? EMPTY
 }
 
+/** Every account and category, archived ones included, for showing names on old transactions. */
+export function useLookups() {
+  const accounts = useLiveQuery(() => db.accounts.toArray(), []) ?? EMPTY
+  const categories = useLiveQuery(() => db.categories.toArray(), []) ?? EMPTY
+  return useMemo(
+    () => ({
+      accounts: new Map<string, Account>(accounts.map((a) => [a.id, a])),
+      categories: new Map<string, Category>(categories.map((c) => [c.id, c])),
+    }),
+    [accounts, categories],
+  )
+}
+
+export type Lookups = ReturnType<typeof useLookups>
+
 export function useCategories(): Category[] {
   return (
     useLiveQuery(
@@ -25,7 +40,15 @@ export function useCategories(): Category[] {
 }
 
 export function useTransactions(): Transaction[] {
-  return useLiveQuery(() => db.transactions.orderBy('date').reverse().toArray(), []) ?? EMPTY
+  return (
+    useLiveQuery(
+      async () =>
+        (await db.transactions.toArray()).sort(
+          (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
+        ),
+      [],
+    ) ?? EMPTY
+  )
 }
 
 export function useSettings(): Settings | undefined {

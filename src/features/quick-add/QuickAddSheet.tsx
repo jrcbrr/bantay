@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { X } from 'lucide-react'
+import { Trash2, X } from 'lucide-react'
+import { useSheets } from '@/app/sheets.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId } from '@/db/db.ts'
 import { useAccounts, useCategories } from '@/db/hooks.ts'
@@ -10,18 +11,17 @@ import type { Template, TransactionType } from '@/domain/types.ts'
 import { AccountIcon } from '@/ui/AccountIcon.tsx'
 import { CategoryIcon } from '@/ui/CategoryIcon.tsx'
 
-interface Props {
-  open: boolean
-  onClose: () => void
-}
-
 const types: [TransactionType, string][] = [
   ['expense', 'Expense'],
   ['income', 'Income'],
   ['transfer', 'Transfer'],
 ]
 
-export function QuickAddSheet({ open, onClose }: Props) {
+export function QuickAddSheet() {
+  const open = useSheets((s) => s.txOpen)
+  const editing = useSheets((s) => s.editing)
+  const onClose = useSheets((s) => s.close)
+
   const accounts = useAccounts()
   const categories = useCategories()
   const templates = useLiveQuery(() => db.templates.filter((t) => !!t.pinned).toArray(), []) ?? []
@@ -34,15 +34,34 @@ export function QuickAddSheet({ open, onClose }: Props) {
   const [note, setNote] = useState('')
   const [date, setDate] = useState(() => toISODate(today()))
 
-  // Reset each time the sheet opens.
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Reset (or load the transaction being edited) each time the sheet opens.
   useEffect(() => {
     if (!open) return
-    setType('expense')
-    setAmountText('')
-    setNote('')
-    setCategoryId('')
-    setDate(toISODate(today()))
-  }, [open])
+    setConfirmDelete(false)
+    if (editing) {
+      setType(editing.type)
+      setAmountText(String(editing.amount / 100))
+      setAccountId(editing.accountId)
+      if (editing.toAccountId) setToAccountId(editing.toAccountId)
+      setCategoryId(editing.categoryId ?? '')
+      setNote(editing.note ?? '')
+      setDate(editing.date)
+    } else {
+      setType('expense')
+      setAmountText('')
+      setNote('')
+      setCategoryId('')
+      setDate(toISODate(today()))
+    }
+  }, [open, editing])
+
+  const chooseType = (t: TransactionType) => {
+    // Expense and income categories don't overlap, so clear the pick when switching.
+    if (t !== type) setCategoryId('')
+    setType(t)
+  }
 
   // Default to the first account once accounts load.
   useEffect(() => {
@@ -66,8 +85,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
 
   const save = async () => {
     if (!canSave || amount === null) return
-    await db.transactions.add({
-      id: newId(),
+    const fields = {
       type,
       amount,
       accountId,
@@ -75,8 +93,16 @@ export function QuickAddSheet({ open, onClose }: Props) {
       categoryId: type === 'transfer' ? undefined : categoryId || undefined,
       note: note.trim() || undefined,
       date,
-      createdAt: Date.now(),
-    })
+    }
+    if (editing) await db.transactions.update(editing.id, fields)
+    else await db.transactions.add({ id: newId(), ...fields, createdAt: Date.now() })
+    onClose()
+  }
+
+  const remove = async () => {
+    if (!editing) return
+    if (!confirmDelete) return setConfirmDelete(true)
+    await db.transactions.delete(editing.id)
     onClose()
   }
 
@@ -94,7 +120,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Add transaction"
+            aria-label={editing ? 'Edit transaction' : 'Add transaction'}
             className="glass fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[92dvh] max-w-lg overflow-y-auto rounded-t-[2rem] bg-paper/80! p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:bottom-6 md:rounded-[2rem] dark:bg-ink/80!"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
@@ -106,7 +132,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
                 {types.map(([v, label]) => (
                   <button
                     key={v}
-                    onClick={() => setType(v)}
+                    onClick={() => chooseType(v)}
                     className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                       type === v ? 'bg-accent text-white shadow' : 'text-ink/55 dark:text-white/55'
                     }`}
@@ -120,7 +146,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
               </button>
             </div>
 
-            {templates.length > 0 && (
+            {!editing && templates.length > 0 && (
               <div className="mb-4 flex gap-2 overflow-x-auto">
                 {templates.map((t) => (
                   <button
@@ -139,7 +165,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
               <div className="flex items-baseline gap-1 border-b border-ink/10 pb-2 dark:border-white/10">
                 <span className="text-2xl text-ink/40 dark:text-white/40">₱</span>
                 <input
-                  autoFocus
+                  autoFocus={!editing}
                   inputMode="decimal"
                   placeholder="0"
                   value={amountText}
@@ -193,13 +219,29 @@ export function QuickAddSheet({ open, onClose }: Props) {
               />
             </div>
 
-            <button
-              disabled={!canSave}
-              onClick={() => void save()}
-              className="bg-accent mt-5 w-full rounded-2xl py-3.5 font-semibold text-white shadow-lg shadow-accent/30 transition active:scale-[0.99] disabled:opacity-40 disabled:shadow-none"
-            >
-              Save
-            </button>
+            <div className="mt-5 flex gap-2">
+              {editing && (
+                <button
+                  onClick={() => void remove()}
+                  className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-semibold transition ${
+                    confirmDelete
+                      ? 'bg-red-600 text-white'
+                      : 'bg-red-500/10 text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  <Trash2 size={18} />
+                  {confirmDelete ? 'Tap to confirm' : ''}
+                  <span className="sr-only">Delete</span>
+                </button>
+              )}
+              <button
+                disabled={!canSave}
+                onClick={() => void save()}
+                className="bg-accent flex-1 rounded-2xl py-3.5 font-semibold text-white shadow-lg shadow-accent/30 transition active:scale-[0.99] disabled:opacity-40 disabled:shadow-none"
+              >
+                {editing ? 'Save changes' : 'Save'}
+              </button>
+            </div>
           </motion.div>
         </>
       )}
