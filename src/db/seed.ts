@@ -77,6 +77,7 @@ export const defaultDashboard: DashboardCard[] = [
   { id: 'safe' },
   { id: 'forecast' },
   { id: 'flow' },
+  { id: 'insights' },
   { id: 'budgets' },
   { id: 'bills' },
   { id: 'liquidity' },

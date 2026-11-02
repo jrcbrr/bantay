@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { AlertTriangle, ChevronRight } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Flame } from 'lucide-react'
+import { monthPeriod, noSpendStreaks, recap } from '@/domain/insights.ts'
 import { markPaid } from '@/db/actions.ts'
 import { db } from '@/db/db.ts'
 import { baonWeekdays, useBudgets, useLookups, type Money } from '@/db/hooks.ts'
@@ -189,6 +190,33 @@ function FlowCard({ money }: CardProps) {
   )
 }
 
+function InsightsCard({ money }: CardProps) {
+  const now = today()
+  const r = recap(money.transactions, monthPeriod(now.getFullYear(), now.getMonth()))
+  const streak = noSpendStreaks(money.transactions, now)
+  return (
+    <GlassCard>
+      <CardHeader title="This month so far" to="/insights" linkText="Insights" />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className={`text-xs ${muted}`}>Saved</p>
+          <Amount value={r.saved} className="text-xl font-semibold" />
+          {r.income > 0 && <p className={`text-xs ${muted}`}>{Math.max(0, Math.round(r.savingsRate * 100))}% of money in</p>}
+        </div>
+        <div>
+          <p className={`flex items-center gap-1 text-xs ${muted}`}>
+            <Flame size={13} className="text-orange-500" /> No-spend streak
+          </p>
+          <p className="text-xl font-semibold">
+            {streak.current} <span className="text-sm font-normal">day{streak.current === 1 ? '' : 's'}</span>
+          </p>
+          <p className={`text-xs ${muted}`}>Best: {streak.longest}</p>
+        </div>
+      </div>
+    </GlassCard>
+  )
+}
+
 function BudgetsCard({ money }: CardProps) {
   const budgets = useBudgets()
   const lookups = useLookups()
@@ -373,6 +401,7 @@ export const dashboardCards: Record<DashboardCardId, CardDef> = {
   safe: { title: 'Safe to spend', description: "Today's limit until your next baon", render: (p) => <SafeCard {...p} /> },
   forecast: { title: '30-day forecast', description: 'Where your balance is heading', render: (p) => <ForecastCard {...p} /> },
   flow: { title: 'Money flow', description: "This month's money in vs out", render: (p) => <FlowCard {...p} /> },
+  insights: { title: 'Savings & streak', description: 'Saved this month and no-spend streak', render: (p) => <InsightsCard {...p} /> },
   budgets: { title: 'Budgets', description: 'Closest to the limit first', render: (p) => <BudgetsCard {...p} /> },
   bills: { title: 'Upcoming bills', description: 'Bills & subscriptions due soon', render: (p) => <BillsCard {...p} /> },
   liquidity: { title: 'Spendable vs savings', description: 'Money you can use vs set aside', render: (p) => <LiquidityCard {...p} /> },
