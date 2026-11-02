@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Camera, Receipt as ReceiptIcon, Sparkles, Trash2, X } from 'lucide-react'
-import { parseEntry } from '@/domain/nlparse.ts'
+import { Camera, Receipt as ReceiptIcon, Trash2, X } from 'lucide-react'
 import { useSheets } from '@/app/sheets.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId } from '@/db/db.ts'
 import { useAccounts, useCategories } from '@/db/hooks.ts'
-import { addDays, toISODate, today } from '@/domain/dates.ts'
+import { toISODate, today } from '@/domain/dates.ts'
 import { parseAmount } from '@/domain/money.ts'
 import type { Template, TransactionType } from '@/domain/types.ts'
 import { AccountIcon } from '@/ui/AccountIcon.tsx'
@@ -39,7 +38,6 @@ export function QuickAddSheet() {
 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [snapNote, setSnapNote] = useState('')
-  const [quickText, setQuickText] = useState('')
   const [zoom, setZoom] = useState(false)
   const cameraInput = useRef<HTMLInputElement>(null)
 
@@ -56,7 +54,6 @@ export function QuickAddSheet() {
     if (!open) return
     setConfirmDelete(false)
     setSnapNote('')
-    setQuickText('')
     setZoom(false)
     if (editing) {
       setType(editing.type)
@@ -74,19 +71,6 @@ export function QuickAddSheet() {
       setDate(toISODate(today()))
     }
   }, [open, editing])
-
-  /** "mcdo 189 cash" → fills the form below as you type. */
-  const onQuickText = (text: string) => {
-    setQuickText(text)
-    const p = parseEntry(text, accounts, categories)
-    setType(p.type ?? 'expense')
-    setAmountText(p.amount ? String(p.amount / 100) : '')
-    if (p.accountId) setAccountId(p.accountId)
-    if (p.toAccountId) setToAccountId(p.toAccountId)
-    setCategoryId(p.categoryId ?? '')
-    setNote(p.note ?? '')
-    setDate(toISODate(addDays(today(), p.dayOffset ?? 0)))
-  }
 
   const chooseType = (t: TransactionType) => {
     // Expense and income categories don't overlap, so clear the pick when switching.
@@ -244,29 +228,12 @@ export function QuickAddSheet() {
             )}
             {snapNote && <p className="text-accent dark:text-accent-soft -mt-2 mb-3 text-sm font-medium">{snapNote}</p>}
 
-            {!editing && (
-              <label className="glass mb-4 flex items-center gap-2 rounded-2xl px-3">
-                <Sparkles size={16} className="text-accent dark:text-accent-soft shrink-0" />
-                <span className="sr-only">Type it in one line</span>
-                <input
-                  value={quickText}
-                  onChange={(e) => onQuickText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && void save()}
-                  placeholder="Type it: mcdo 189 cash"
-                  autoFocus
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  enterKeyHint="done"
-                  className="w-full bg-transparent py-3 text-sm outline-none"
-                />
-              </label>
-            )}
-
             <label className="block">
               <span className="sr-only">Amount</span>
               <div className="flex items-baseline gap-1 border-b border-ink/10 pb-2 dark:border-white/10">
                 <span className="text-2xl text-ink/40 dark:text-white/40">₱</span>
                 <input
+                  autoFocus={!editing}
                   inputMode="decimal"
                   placeholder="0"
                   value={amountText}
