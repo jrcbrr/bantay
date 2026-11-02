@@ -2,6 +2,10 @@ import { NavLink, Outlet } from 'react-router'
 import { ArrowLeftRight, Gem, Home, Plus, Settings, Target, type LucideIcon } from 'lucide-react'
 import { Backdrop } from '@/ui/Backdrop.tsx'
 import { QuickAddSheet } from '@/features/quick-add/QuickAddSheet.tsx'
+import { useEffect } from 'react'
+import { useSettings } from '@/db/hooks.ts'
+import { LockScreen } from './LockScreen.tsx'
+import { useLock, watchVisibility } from './pin.ts'
 import { useSheets } from './sheets.ts'
 import { useTheme } from './useTheme.ts'
 
@@ -28,6 +32,20 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 export function Shell() {
   useTheme()
   const openAdd = useSheets((s) => s.openAdd)
+  const settings = useSettings()
+  const locked = useLock((s) => s.locked)
+  const unlock = useLock((s) => s.unlock)
+  const hasPin = !!settings?.pinHash
+
+  // No PIN set: never locked. With a PIN: lock again after a minute in the background.
+  useEffect(() => {
+    if (settings && !settings.pinHash) unlock()
+  }, [settings, unlock])
+  useEffect(() => watchVisibility(), [])
+
+  // Don't flash your balances before we know whether a PIN is set.
+  if (!settings) return <Backdrop />
+  if (hasPin && locked) return <LockScreen />
 
   return (
     <div className="relative min-h-dvh">

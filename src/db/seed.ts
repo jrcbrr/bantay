@@ -55,7 +55,16 @@ const categoryList: Omit<Category, 'order'>[] = [
   c('other-inc', 'Other income', 'income', 'circle-plus', '#94a3b8'),
 ]
 
-export const defaultCategories: Category[] = categoryList.map((cat, i) => ({ ...cat, order: i }))
+/** Used automatically by Debts & IOUs; hidden from pickers. */
+const debtCategories: Omit<Category, 'order'>[] = [
+  { ...c('borrowed', 'Borrowed', 'income', 'hand-coins', '#64748b'), archived: true },
+  { ...c('debt-collect', 'Paid back to me', 'income', 'undo-2', '#64748b'), archived: true },
+  { ...c('lent', 'Lent', 'expense', 'hand-coins', '#64748b'), archived: true },
+  { ...c('debt-repay', 'Debt repayment', 'expense', 'undo-2', '#64748b'), archived: true },
+]
+
+export const defaultCategories: Category[] = [...categoryList, ...debtCategories].map((cat, i) => ({ ...cat, order: i }))
+export const debtCategoryIds = debtCategories.map((cat) => cat.id)
 
 const templates: Template[] = [
   { id: 'tpl-baon', label: 'Baon', type: 'income', categoryId: 'baon', accountId: 'cash', pinned: true },

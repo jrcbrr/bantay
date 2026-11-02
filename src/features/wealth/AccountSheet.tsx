@@ -37,6 +37,8 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
   const [color, setColor] = useState<string | undefined>()
   const [iconImage, setIconImage] = useState<string | undefined>()
   const [savings, setSavings] = useState(false)
+  const [dueDayText, setDueDayText] = useState('')
+  const [limitText, setLimitText] = useState('')
   const [error, setError] = useState('')
   const [confirmArchive, setConfirmArchive] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -53,6 +55,8 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
       setColor('#2f6bff')
       setIconImage(undefined)
       setSavings(false)
+      setDueDayText('')
+      setLimitText('')
     } else {
       setName(target.name)
       setKind(target.kind)
@@ -62,11 +66,16 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
       setColor(target.color)
       setIconImage(target.iconImage)
       setSavings(!!target.savings)
+      setDueDayText(target.dueDay ? String(target.dueDay) : '')
+      setLimitText(target.creditLimit ? String(target.creditLimit / 100) : '')
     }
   }, [target])
 
   const startAmount = startText.trim() === '' ? 0 : parseAmount(startText)
-  const valid = !!name.trim() && startAmount !== null
+  const dueDay = dueDayText.trim() === '' ? undefined : Number(dueDayText)
+  const dueDayOk = dueDay === undefined || (Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31)
+  const creditLimit = limitText.trim() === '' ? undefined : parseAmount(limitText)
+  const valid = !!name.trim() && startAmount !== null && (kind !== 'credit' || (dueDayOk && creditLimit !== null))
   const preview = { name, kind, icon, color, iconImage }
 
   const onPickImage = async (file: File | undefined) => {
@@ -83,7 +92,17 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
     if (!valid || startAmount === null) return
     // Credit card balances are money owed, so store them as negative.
     const openingBalance = kind === 'credit' ? -startAmount : startAmount
-    const fields = { name: name.trim(), kind, openingBalance, icon, color, iconImage, savings: kind !== 'credit' && savings }
+    const fields = {
+      name: name.trim(),
+      kind,
+      openingBalance,
+      icon,
+      color,
+      iconImage,
+      savings: kind !== 'credit' && savings,
+      dueDay: kind === 'credit' ? dueDay : undefined,
+      creditLimit: kind === 'credit' ? (creditLimit ?? undefined) : undefined,
+    }
     if (account) await db.accounts.update(account.id, fields)
     else await db.accounts.add({ id: newId(), ...fields, createdAt: Date.now() })
     onClose()
@@ -145,6 +164,35 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
               : 'What was in it before you started tracking. Transactions add and subtract from here.'}
           </p>
         </div>
+
+        {kind === 'credit' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className={label}>Due every month on</p>
+              <input
+                inputMode="numeric"
+                placeholder="Day, e.g. 15"
+                value={dueDayText}
+                onChange={(e) => setDueDayText(e.target.value.replace(/\D/g, '').slice(0, 2))}
+                className={`${field} w-full`}
+              />
+              {!dueDayOk && <p className="mt-1 text-xs text-red-500">Use a day from 1 to 31.</p>}
+            </div>
+            <div>
+              <p className={label}>Credit limit</p>
+              <div className={`${field} flex items-baseline gap-1`}>
+                <span className="text-ink/40 dark:text-white/40">₱</span>
+                <input
+                  inputMode="decimal"
+                  placeholder="Optional"
+                  value={limitText}
+                  onChange={(e) => setLimitText(e.target.value)}
+                  className="tabular w-full bg-transparent outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {kind !== 'credit' && (
           <div className="rounded-2xl bg-ink/[0.03] p-4 dark:bg-white/[0.04]">

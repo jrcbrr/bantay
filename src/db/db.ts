@@ -13,7 +13,7 @@ import type {
   Template,
   Transaction,
 } from '@/domain/types.ts'
-import { defaultAccountLooks, defaultCategories, defaultDashboard, seed } from './seed.ts'
+import { debtCategoryIds, defaultAccountLooks, defaultCategories, defaultDashboard, seed } from './seed.ts'
 
 export class BantayDB extends Dexie {
   declare accounts: EntityTable<Account, 'id'>
@@ -90,6 +90,20 @@ export class BantayDB extends Dexie {
           .modify((s: Settings) => {
             s.dashboard ??= defaultDashboard
           })
+      })
+    // v5: debts & installments get indexes on transactions; debt categories added.
+    this.version(5)
+      .stores({
+        transactions:
+          'id, date, type, accountId, toAccountId, categoryId, debtId, installmentId, receiptId, recurringId',
+        installments: 'id, cardAccountId, createdAt',
+        debts: 'id, settled, createdAt',
+      })
+      .upgrade(async (tx) => {
+        const table = tx.table<Category, string>('categories')
+        for (const cat of defaultCategories.filter((c) => debtCategoryIds.includes(c.id))) {
+          if (!(await table.get(cat.id))) await table.add(cat)
+        }
       })
     this.on('populate', (tx) => seed(tx))
   }

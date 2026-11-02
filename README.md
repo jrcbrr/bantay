@@ -1,32 +1,64 @@
 <div align="center">
   <img src="public/icon.svg" width="88" alt="Bantay" />
   <h1>Bantay</h1>
-  <p>An offline-first personal budget tracker. No account, no cloud — your money stays on your device.</p>
+  <p><b>Your money, watched closely.</b><br/>An offline-first personal budget tracker. No account, no cloud: your data stays on your device.</p>
+  <p>
+    <a href="https://jrcbrr.github.io/bantay/"><b>Open the app →</b></a>
+  </p>
+  <p>
+    <img alt="CI" src="https://github.com/jrcbrr/bantay/actions/workflows/ci.yml/badge.svg" />
+    <img alt="Deploy" src="https://github.com/jrcbrr/bantay/actions/workflows/deploy.yml/badge.svg" />
+  </p>
 </div>
 
 ## Features
 
-- **Dashboard**: cards you can reorder and hide, including balance, safe to spend, a 30-day forecast, money flow, budgets, upcoming bills, spendable vs savings, and net worth
-- **Safe to spend today**: what's left until your next baon, after setting aside bills due before then
-- **Privacy mode**: one tap hides every amount as `₱****`
-- **Plan**: weekly or monthly category budgets, savings goals, and recurring bills and subscriptions with one-tap "Paid"
-- **Wealth**: accounts grouped into spendable, savings, and credit; an assets tracker with gain or loss against what you paid
-- **Activity**: search, filters, a calendar view, and a receipts inbox where you snap now and log later
-- **Liquid glass UI** in light and dark mode, installable, works fully offline
+**Everyday**
+- **Quick add** with a one-line input: type `mcdo 189 cash`, `baon 150 gcash`, or `transfer 500 gcash to cash` and the form fills itself in. Parsing happens offline and understands everyday Filipino spending words.
+- **Editable quick templates** for things you log every day (baon, fare, lunch)
+- **Safe to spend today**: what's left until your next baon, after setting aside bills due before then. The "No baon today" switch covers holidays and days without class.
+- **Receipts inbox**: snap a receipt now and log it later. The photo stays attached to the transaction.
+
+**Home dashboard**: cards you can reorder and hide (drag to reorder), covering balance, safe to spend, a 30-day forecast, money flow, budgets, upcoming bills, spendable vs savings, net worth, and recent activity.
+
+**Plan**
+- Weekly or monthly category budgets
+- Savings goals, either linked to an account or updated by hand
+- Recurring bills and subscriptions with one-tap *Paid*
+
+**Wealth**
+- Accounts grouped into spendable, savings, and credit
+- Credit cards with due dates, credit limit, and installment plans (e.g. 12 months at 0%)
+- Debts and IOUs, both ways, with partial repayments
+- An assets tracker showing gain or loss against what you paid
+
+**Activity**: search (notes, categories, accounts, amounts), filters, and a calendar view with daily totals
+
+**Privacy and safety**
+- Privacy mode hides every amount as `₱****`
+- PIN lock, stored as a PBKDF2 hash. It keeps others out but doesn't encrypt your data.
+- JSON backup and restore (validated before anything is replaced) and CSV export for spreadsheets
+
+Liquid glass UI in light and dark mode. Installable, and works fully offline.
 
 ## Stack
 
-React 19 · TypeScript · Vite · Tailwind CSS v4 · Dexie (IndexedDB) · Motion · vite-plugin-pwa · Vitest
+React 19 · TypeScript (strict) · Vite · Tailwind CSS v4 · Dexie (IndexedDB) · Zustand · Motion · Zod · vite-plugin-pwa · Vitest
 
 ```
 src/
-  app/        shell, routing, theme
-  ui/         glass design system
-  domain/     pure logic: balances, baon cycle, safe-to-spend, budgets, bills,
-              forecast, search, calendar, assets (all unit tested)
-  db/         Dexie schema + migrations, seed data, live-query hooks, actions
-  features/   home (dashboard) · activity · receipts · quick-add · plan · wealth · categories · settings
+  app/        shell, routing, theme, privacy mode, PIN lock, sheet state
+  ui/         glass design system and form primitives
+  domain/     pure logic, all unit tested:
+              balances · baon cycle · safe to spend · budgets · recurring bills
+              forecast · search · calendar · assets · credit & debts · one-line parser
+  db/         Dexie schema and migrations, seed data, live-query hooks,
+              actions, backup format
+  features/   home · activity · receipts · quick-add · plan · wealth
+              categories · templates · settings
 ```
+
+All money is stored as whole centavos, so totals never drift by a centavo. Business rules live in `domain/` as plain functions with no React or database code, which keeps them easy to test.
 
 ## Develop
 
@@ -36,3 +68,5 @@ npm run dev        # http://localhost:5173/bantay/
 npm test
 npm run build
 ```
+
+Every push to `main` runs CI (typecheck, lint, tests, build) and deploys to GitHub Pages.

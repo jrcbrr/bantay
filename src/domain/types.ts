@@ -22,6 +22,10 @@ export interface Account {
   iconImage?: string
   /** Savings / locked money: counts toward net worth but not safe-to-spend. */
   savings?: boolean
+  /** Credit cards: day of month the bill is due (1–31). */
+  dueDay?: number
+  /** Credit cards: credit limit. */
+  creditLimit?: Centavos
   archived?: boolean
   createdAt: number
 }
@@ -57,6 +61,8 @@ export interface Transaction {
   installmentId?: ID
   recurringId?: ID
   receiptId?: ID
+  /** For debt transactions: the original loan, or a repayment. */
+  debtRole?: 'principal' | 'payment'
   createdAt: number
 }
 
@@ -158,7 +164,9 @@ export interface Installment {
   cardAccountId: ID
   total: Centavos
   months: number
+  /** Date of the first monthly charge. */
   startDate: ISODate
+  createdAt: number
 }
 
 export type DebtDirection = 'i_owe' | 'owed_to_me'
@@ -169,6 +177,7 @@ export interface Debt {
   direction: DebtDirection
   principal: Centavos
   note?: string
+  dueDate?: ISODate
   settled?: boolean
   createdAt: number
 }
@@ -186,6 +195,12 @@ export interface Settings {
   allowanceWeekday: number
   /** 1–28, used when cycle is monthly. */
   allowanceDayOfMonth: number
+  /** Baon days you're not getting baon (holidays, no class). */
+  skipBaonDates?: ISODate[]
+  /** Last time a backup file was downloaded (epoch ms). */
+  lastBackupAt?: number
+  /** Salt for the PIN hash. */
+  pinSalt?: string
   /** Home dashboard order and visibility. */
   dashboard?: DashboardCard[]
   pinHash?: string

@@ -1,6 +1,7 @@
 import { toISODate, today } from '@/domain/dates.ts'
 import { advance } from '@/domain/recurring.ts'
-import type { Recurring } from '@/domain/types.ts'
+import { debtCategory, debtStatus, debtTxType, installmentStatus } from '@/domain/credit.ts'
+import type { Centavos, Debt, ID, ISODate, Installment, Recurring } from '@/domain/types.ts'
 import { db, newId } from './db.ts'
 
 /**
@@ -29,4 +30,112 @@ export async function markPaid(r: Recurring): Promise<void> {
 /** Skip one occurrence without logging money (e.g. a free month). */
 export async function skipOnce(r: Recurring): Promise<void> {
   await db.recurring.update(r.id, { nextDue: advance(r.nextDue, r.frequency, r.anchorDay) })
+}
+
+/* ---------------- Debts & IOUs ---------------- */
+
+export interface NewDebt {
+  person: string
+  direction: Debt['direction']
+  principal: Centavos
+  note?: string
+  dueDate?: ISODate
+  /** Record the money moving now (lent from / borrowed into this account). */
+  accountId?: ID
+}
+
+const debtNote = (direction: Debt['direction'], role: 'principal' | 'payment', person: string) =>
+  direction === 'i_owe'
+    ? role === 'principal'
+      ? `Borrowed from ${person}`
+      : `Paid back ${person}`
+    : role === 'principal'
+      ? `Lent to ${person}`
+      : `${person} paid me back`
+
+export async function createDebt(d: NewDebt): Promise<void> {
+  const id = newId()
+  await db.transaction('rw', db.debts, db.transactions, async () => {
+    await db.debts.add({
+      id,
+      person: d.person,
+      direction: d.direction,
+      principal: d.principal,
+      note: d.note,
+      dueDate: d.dueDate,
+      createdAt: Date.now(),
+    })
+    if (d.accountId) {
+      await db.transactions.add({
+        id: newId(),
+        type: debtTxType(d.direction, 'principal'),
+        amount: d.principal,
+        accountId: d.accountId,
+        categoryId: debtCategory(d.direction, 'principal'),
+        note: debtNote(d.direction, 'principal', d.person),
+        date: toISODate(today()),
+        debtId: id,
+        debtRole: 'principal',
+        createdAt: Date.now(),
+      })
+    }
+  })
+}
+
+/** Log a repayment (either way) and settle the debt once it's fully paid. */
+export async function recordDebtPayment(debt: Debt, amount: Centavos, accountId: ID): Promise<void> {
+  await db.transaction('rw', db.debts, db.transactions, async () => {
+    await db.transactions.add({
+      id: newId(),
+      type: debtTxType(debt.direction, 'payment'),
+      amount,
+      accountId,
+      categoryId: debtCategory(debt.direction, 'payment'),
+      note: debtNote(debt.direction, 'payment', debt.person),
+      date: toISODate(today()),
+      debtId: debt.id,
+      debtRole: 'payment',
+      createdAt: Date.now(),
+    })
+    const txs = await db.transactions.where('debtId').equals(debt.id).toArray()
+    if (debtStatus(debt, txs).remaining === 0) await db.debts.update(debt.id, { settled: true })
+  })
+}
+
+/** Delete a debt and the transactions it created, so balances go back to how they were. */
+export async function deleteDebt(debt: Debt): Promise<void> {
+  await db.transaction('rw', db.debts, db.transactions, async () => {
+    await db.transactions.where('debtId').equals(debt.id).delete()
+    await db.debts.delete(debt.id)
+  })
+}
+
+/* ---------------- Installments ---------------- */
+
+/** Log the next monthly installment charge on the card. */
+export async function logInstallmentCharge(inst: Installment): Promise<void> {
+  const txs = await db.transactions.where('installmentId').equals(inst.id).toArray()
+  const status = installmentStatus(inst, txs)
+  if (!status.next) return
+  const todayISO = toISODate(today())
+  await db.transactions.add({
+    id: newId(),
+    type: 'expense',
+    amount: status.next.amount,
+    accountId: inst.cardAccountId,
+    note: `${inst.label} (${status.next.index + 1}/${inst.months})`,
+    date: status.next.date < todayISO ? status.next.date : todayISO,
+    installmentId: inst.id,
+    createdAt: Date.now(),
+  })
+}
+
+/** Delete an installment plan. Charges already logged stay as normal card transactions. */
+export async function deleteInstallment(inst: Installment): Promise<void> {
+  await db.transaction('rw', db.installments, db.transactions, async () => {
+    await db.transactions.where('installmentId').equals(inst.id).modify((t) => {
+      delete t.installmentId
+    })
+    await db.installments.delete(inst.id)
+  })
 }
