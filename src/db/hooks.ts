@@ -21,6 +21,8 @@ import type {
   WishItem,
 } from '@/domain/types.ts'
 import type { Challenge, EventBudget } from '@/domain/planExtras.ts'
+import type { CategoryRule } from '@/domain/rules.ts'
+import type { YearArchive } from '@/domain/archive.ts'
 import { db } from './db.ts'
 
 const EMPTY: never[] = []
@@ -124,6 +126,14 @@ export function useWishlist(): WishItem[] {
       [],
     ) ?? EMPTY
   )
+}
+
+export function useRules(): CategoryRule[] {
+  return useLiveQuery(async () => (await db.rules.toArray()).sort((a, b) => a.keyword.localeCompare(b.keyword)), []) ?? EMPTY
+}
+
+export function useArchives(): YearArchive[] {
+  return useLiveQuery(async () => (await db.archives.toArray()).sort((a, b) => b.year - a.year), []) ?? EMPTY
 }
 
 export function useTemplates(): Template[] {

@@ -4,7 +4,9 @@ import { Camera, Receipt as ReceiptIcon, Trash2, X } from 'lucide-react'
 import { useSheets } from '@/app/sheets.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId } from '@/db/db.ts'
-import { useAccounts, useCategories, useEvents, useSettings } from '@/db/hooks.ts'
+import { useAccounts, useCategories, useEvents, useRules, useSettings } from '@/db/hooks.ts'
+import { keywordFromNote, matchRule } from '@/domain/rules.ts'
+import { showToast } from '@/app/toast.ts'
 import { isSpendable } from '@/domain/balance.ts'
 import { eventsOn, roundUpAmount } from '@/domain/planExtras.ts'
 import { toISODate, today } from '@/domain/dates.ts'
@@ -28,6 +30,9 @@ export function QuickAddSheet() {
   const settings = useSettings()
   const events = useEvents()
   const [eventId, setEventId] = useState('')
+  const rules = useRules()
+  /** True while the category was picked by a rule rather than by you. */
+  const [autoCat, setAutoCat] = useState(false)
   const onClose = useSheets((s) => s.close)
 
   const accounts = useAccounts()
@@ -61,6 +66,7 @@ export function QuickAddSheet() {
     setConfirmDelete(false)
     setSnapNote('')
     setZoom(false)
+    setAutoCat(false)
     if (editing) {
       setType(editing.type)
       setAmountText(String(editing.amount / 100))
@@ -109,6 +115,16 @@ export function QuickAddSheet() {
     setNote(t.note ?? '')
   }
 
+  /** Remember "this note → this category" for next time. */
+  const learn = async (noteText: string, catId: string | undefined, kind: TransactionType) => {
+    if (settings?.learnRules === false || !catId || kind === 'transfer') return
+    const keyword = keywordFromNote(noteText)
+    if (!keyword || matchRule(noteText, rules)?.categoryId === catId) return
+    const same = rules.find((r) => r.keyword === keyword)
+    if (same) await db.rules.update(same.id, { categoryId: catId, createdAt: Date.now() })
+    else await db.rules.add({ id: newId(), keyword, categoryId: catId, learned: true, createdAt: Date.now() })
+  }
+
   const save = async () => {
     if (!canSave || amount === null) return
     const fields = {
@@ -122,15 +138,22 @@ export function QuickAddSheet() {
       eventId: type === 'expense' && activeEvents.some((e) => e.id === eventId) ? eventId : undefined,
     }
     if (editing) {
+      const before = editing
       await db.transactions.update(editing.id, fields)
+      showToast('Changes saved', async () => {
+        await db.transactions.put(before)
+      })
     } else {
       const id = newId()
       const from = accounts.find((a) => a.id === accountId)
       const ru = settings?.roundUp
-      const extra = type === 'expense' && ru && from && isSpendable(from) && ru.accountId !== accountId ? roundUpAmount(amount, ru.toPesos) : 0
+      const extra =
+        type === 'expense' && ru && from && isSpendable(from) && ru.accountId !== accountId ? roundUpAmount(amount, ru.toPesos) : 0
+      const receiptId = receipt?.id
+      const wishId = prefill?.wishId
       await db.transaction('rw', [db.transactions, db.receipts, db.wishlist], async () => {
-        await db.transactions.add({ id, ...fields, receiptId: receipt?.id, createdAt: Date.now() })
-        if (receipt) await db.receipts.update(receipt.id, { status: 'done', transactionId: id })
+        await db.transactions.add({ id, ...fields, receiptId, createdAt: Date.now() })
+        if (receiptId) await db.receipts.update(receiptId, { status: 'done', transactionId: id })
         // Round-up: move the spare change to savings.
         if (extra > 0 && ru) {
           await db.transactions.add({
@@ -145,23 +168,58 @@ export function QuickAddSheet() {
             createdAt: Date.now() + 1,
           })
         }
-        if (prefill?.wishId) await db.wishlist.update(prefill.wishId, { bought: true })
+        if (wishId) await db.wishlist.update(wishId, { bought: true })
+      })
+      showToast(extra > 0 ? `Saved · ₱${extra / 100} rounded up to savings` : 'Saved', async () => {
+        await db.transaction('rw', [db.transactions, db.receipts, db.wishlist], async () => {
+          await db.transactions.delete(id)
+          await db.transactions.where('roundUpOf').equals(id).delete()
+          if (receiptId) await db.receipts.update(receiptId, { status: 'pending', transactionId: undefined })
+          if (wishId) await db.wishlist.update(wishId, { bought: false })
+        })
       })
     }
+    void learn(note, fields.categoryId, type)
     onClose()
   }
 
   const remove = async () => {
     if (!editing) return
     if (!confirmDelete) return setConfirmDelete(true)
+    const deleted = editing
+    const roundUps = await db.transactions.where('roundUpOf').equals(deleted.id).toArray()
     await db.transaction('rw', db.transactions, db.receipts, async () => {
-      await db.transactions.delete(editing.id)
+      await db.transactions.delete(deleted.id)
       // Its round-up goes too.
-      await db.transactions.where('roundUpOf').equals(editing.id).delete()
+      await db.transactions.bulkDelete(roundUps.map((t) => t.id))
       // Send its receipt back to the inbox instead of losing the photo.
-      if (editing.receiptId) await db.receipts.update(editing.receiptId, { status: 'pending', transactionId: undefined })
+      if (deleted.receiptId) await db.receipts.update(deleted.receiptId, { status: 'pending', transactionId: undefined })
+    })
+    showToast('Transaction deleted', async () => {
+      await db.transaction('rw', db.transactions, db.receipts, async () => {
+        await db.transactions.bulkPut([deleted, ...roundUps])
+        if (deleted.receiptId) await db.receipts.update(deleted.receiptId, { status: 'done', transactionId: deleted.id })
+      })
     })
     onClose()
+  }
+
+  /** Auto-pick a category from your rules as you type the note (until you pick one yourself). */
+  const onNoteChange = (text: string) => {
+    setNote(text)
+    if (type === 'transfer' || (categoryId && !autoCat)) return
+    const kind = type === 'income' ? 'income' : 'expense'
+    const r = matchRule(
+      text,
+      rules.filter((x) => categories.find((c) => c.id === x.categoryId)?.kind === kind),
+    )
+    if (r) {
+      setCategoryId(r.categoryId)
+      setAutoCat(true)
+    } else if (autoCat) {
+      setCategoryId('')
+      setAutoCat(false)
+    }
   }
 
   /** Quick capture: save the photo to the inbox and deal with it later. */
@@ -299,7 +357,10 @@ export function QuickAddSheet() {
                 <Chips
                   items={visibleCategories.map((c) => [c.id, c.name, <CategoryIcon category={c} />])}
                   value={categoryId}
-                  onChange={(v) => setCategoryId(v === categoryId ? '' : v)}
+                  onChange={(v) => {
+                    setAutoCat(false)
+                    setCategoryId(v === categoryId && !autoCat ? '' : v)
+                  }}
                 />
               </Section>
             )}
@@ -318,7 +379,7 @@ export function QuickAddSheet() {
               <input
                 placeholder="Note (e.g. McDo)"
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
+                onChange={(e) => onNoteChange(e.target.value)}
                 className="flex-1 rounded-xl bg-ink/[0.05] px-3 py-2.5 text-sm outline-none dark:bg-white/[0.07]"
               />
               <input

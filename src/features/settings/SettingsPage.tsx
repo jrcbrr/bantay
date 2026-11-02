@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, Tags, Zap } from 'lucide-react'
+import { Check, ChevronRight, Tags, Wand2, Zap } from 'lucide-react'
+import { ACCENTS } from '@/app/useTheme.ts'
+import { ArchiveCard } from './ArchiveCard.tsx'
 import { BackupCard } from './BackupCard.tsx'
 import { PinCard } from './PinCard.tsx'
 import { RoundUpCard } from './RoundUpCard.tsx'
@@ -104,6 +106,12 @@ export function SettingsPage() {
             <span className="text-sm text-ink/50 dark:text-white/50">Add, rename, reorder</span>
             <ChevronRight size={18} className="text-ink/30 dark:text-white/30" />
           </Link>
+          <Link to="/settings/rules" className="flex items-center gap-3 rounded-2xl px-3 py-3">
+            <Wand2 size={20} className="text-accent dark:text-accent-soft" />
+            <span className="flex-1 font-medium">Auto-categorize</span>
+            <span className="text-sm text-ink/50 dark:text-white/50">Note → category</span>
+            <ChevronRight size={18} className="text-ink/30 dark:text-white/30" />
+          </Link>
           <Link to="/settings/templates" className="flex items-center gap-3 rounded-2xl px-3 py-3">
             <Zap size={20} className="text-accent dark:text-accent-soft" />
             <span className="flex-1 font-medium">Quick templates</span>
@@ -128,7 +136,30 @@ export function SettingsPage() {
               onChange={(v) => update({ theme: v as Settings['theme'] })}
             />
           </Field>
+          <div className="mt-4">
+            <p className="mb-2 text-sm text-ink/70 dark:text-white/70">Accent color</p>
+            <div className="flex flex-wrap gap-2.5">
+              {ACCENTS.map(([name, hex]) => {
+                const selected = (s.accent ?? '#2f6bff') === hex
+                return (
+                  <button
+                    key={hex}
+                    aria-label={name}
+                    aria-pressed={selected}
+                    title={name}
+                    onClick={() => update({ accent: hex === '#2f6bff' ? undefined : hex })}
+                    className="flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95"
+                    style={{ background: hex, boxShadow: selected ? `0 0 0 3px ${hex}55` : undefined }}
+                  >
+                    {selected && <Check size={16} className="text-white" />}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </GlassCard>
+
+        <ArchiveCard />
 
         <p className="text-center text-xs text-ink/40 dark:text-white/40">
           Bantay works offline. Your data stays on this device and is never uploaded anywhere.
