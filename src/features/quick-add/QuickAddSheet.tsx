@@ -4,7 +4,9 @@ import { Camera, Receipt as ReceiptIcon, Trash2, X } from 'lucide-react'
 import { useSheets } from '@/app/sheets.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId } from '@/db/db.ts'
-import { useAccounts, useCategories } from '@/db/hooks.ts'
+import { useAccounts, useCategories, useEvents, useSettings } from '@/db/hooks.ts'
+import { isSpendable } from '@/domain/balance.ts'
+import { eventsOn, roundUpAmount } from '@/domain/planExtras.ts'
 import { toISODate, today } from '@/domain/dates.ts'
 import { parseAmount } from '@/domain/money.ts'
 import type { Template, TransactionType } from '@/domain/types.ts'
@@ -22,6 +24,10 @@ export function QuickAddSheet() {
   const open = useSheets((s) => s.txOpen)
   const editing = useSheets((s) => s.editing)
   const receipt = useSheets((s) => s.receipt)
+  const prefill = useSheets((s) => s.prefill)
+  const settings = useSettings()
+  const events = useEvents()
+  const [eventId, setEventId] = useState('')
   const onClose = useSheets((s) => s.close)
 
   const accounts = useAccounts()
@@ -63,14 +69,19 @@ export function QuickAddSheet() {
       setCategoryId(editing.categoryId ?? '')
       setNote(editing.note ?? '')
       setDate(editing.date)
+      setEventId(editing.eventId ?? '')
     } else {
-      setType('expense')
-      setAmountText('')
-      setNote('')
-      setCategoryId('')
+      setType(prefill?.type ?? 'expense')
+      setAmountText(prefill?.amount ? String(prefill.amount / 100) : '')
+      setNote(prefill?.note ?? '')
+      setCategoryId(prefill?.categoryId ?? '')
+      if (prefill?.accountId) setAccountId(prefill.accountId)
       setDate(toISODate(today()))
+      setEventId('')
     }
-  }, [open, editing])
+  }, [open, editing, prefill])
+
+  const activeEvents = eventsOn(events, date)
 
   const chooseType = (t: TransactionType) => {
     // Expense and income categories don't overlap, so clear the pick when switching.
@@ -108,14 +119,33 @@ export function QuickAddSheet() {
       categoryId: type === 'transfer' ? undefined : categoryId || undefined,
       note: note.trim() || undefined,
       date,
+      eventId: type === 'expense' && activeEvents.some((e) => e.id === eventId) ? eventId : undefined,
     }
     if (editing) {
       await db.transactions.update(editing.id, fields)
     } else {
       const id = newId()
-      await db.transaction('rw', db.transactions, db.receipts, async () => {
+      const from = accounts.find((a) => a.id === accountId)
+      const ru = settings?.roundUp
+      const extra = type === 'expense' && ru && from && isSpendable(from) && ru.accountId !== accountId ? roundUpAmount(amount, ru.toPesos) : 0
+      await db.transaction('rw', [db.transactions, db.receipts, db.wishlist], async () => {
         await db.transactions.add({ id, ...fields, receiptId: receipt?.id, createdAt: Date.now() })
         if (receipt) await db.receipts.update(receipt.id, { status: 'done', transactionId: id })
+        // Round-up: move the spare change to savings.
+        if (extra > 0 && ru) {
+          await db.transactions.add({
+            id: newId(),
+            type: 'transfer',
+            amount: extra,
+            accountId,
+            toAccountId: ru.accountId,
+            note: 'Round-up',
+            date,
+            roundUpOf: id,
+            createdAt: Date.now() + 1,
+          })
+        }
+        if (prefill?.wishId) await db.wishlist.update(prefill.wishId, { bought: true })
       })
     }
     onClose()
@@ -126,6 +156,8 @@ export function QuickAddSheet() {
     if (!confirmDelete) return setConfirmDelete(true)
     await db.transaction('rw', db.transactions, db.receipts, async () => {
       await db.transactions.delete(editing.id)
+      // Its round-up goes too.
+      await db.transactions.where('roundUpOf').equals(editing.id).delete()
       // Send its receipt back to the inbox instead of losing the photo.
       if (editing.receiptId) await db.receipts.update(editing.receiptId, { status: 'pending', transactionId: undefined })
     })
@@ -268,6 +300,16 @@ export function QuickAddSheet() {
                   items={visibleCategories.map((c) => [c.id, c.name, <CategoryIcon category={c} />])}
                   value={categoryId}
                   onChange={(v) => setCategoryId(v === categoryId ? '' : v)}
+                />
+              </Section>
+            )}
+
+            {type === 'expense' && activeEvents.length > 0 && (
+              <Section title="Count toward">
+                <Chips
+                  items={[['', 'None'], ...activeEvents.map((e): [string, string] => [e.id, e.name])]}
+                  value={eventId}
+                  onChange={setEventId}
                 />
               </Section>
             )}

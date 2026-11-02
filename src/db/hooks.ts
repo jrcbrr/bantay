@@ -18,7 +18,9 @@ import type {
   Settings,
   Template,
   Transaction,
+  WishItem,
 } from '@/domain/types.ts'
+import type { Challenge, EventBudget } from '@/domain/planExtras.ts'
 import { db } from './db.ts'
 
 const EMPTY: never[] = []
@@ -104,6 +106,24 @@ export function useDebts(): Debt[] {
 
 export function useInstallments(): Installment[] {
   return useLiveQuery(async () => (await db.installments.toArray()).sort((a, b) => a.createdAt - b.createdAt), []) ?? EMPTY
+}
+
+export function useEvents(): EventBudget[] {
+  return useLiveQuery(async () => (await db.events.toArray()).sort((a, b) => b.start.localeCompare(a.start)), []) ?? EMPTY
+}
+
+export function useChallenges(): Challenge[] {
+  return useLiveQuery(async () => (await db.challenges.toArray()).sort((a, b) => a.createdAt - b.createdAt), []) ?? EMPTY
+}
+
+export function useWishlist(): WishItem[] {
+  return (
+    useLiveQuery(
+      async () =>
+        (await db.wishlist.toArray()).sort((a, b) => Number(!!a.bought) - Number(!!b.bought) || a.priority - b.priority || a.price - b.price),
+      [],
+    ) ?? EMPTY
+  )
 }
 
 export function useTemplates(): Template[] {

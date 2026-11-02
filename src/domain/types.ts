@@ -61,6 +61,10 @@ export interface Transaction {
   installmentId?: ID
   recurringId?: ID
   receiptId?: ID
+  /** Event budget this spending counts toward. */
+  eventId?: ID
+  /** Set on the automatic round-up transfer, pointing at the expense it rounded. */
+  roundUpOf?: ID
   /** For debt transactions: the original loan, or a repayment. */
   debtRole?: 'principal' | 'payment'
   createdAt: number
@@ -97,6 +101,8 @@ export interface Goal {
   saved: Centavos
   deadline?: ISODate
   color: string
+  /** Milestones (25/50/75/100) already celebrated. */
+  celebrated?: number[]
   createdAt: number
 }
 
@@ -198,6 +204,8 @@ export interface Settings {
   allowanceDayOfMonth: number
   /** Baon days you're not getting baon (holidays, no class). */
   skipBaonDates?: ISODate[]
+  /** Round each expense up and move the difference to a savings account. */
+  roundUp?: { toPesos: number; accountId: ID }
   /** Last time a backup file was downloaded (epoch ms). */
   lastBackupAt?: number
   /** Salt for the PIN hash. */
@@ -205,4 +213,15 @@ export interface Settings {
   /** Home dashboard order and visibility. */
   dashboard?: DashboardCard[]
   pinHash?: string
+}
+
+export interface WishItem {
+  id: ID
+  name: string
+  price: Centavos
+  /** 1 = must have, 2 = want, 3 = nice to have */
+  priority: 1 | 2 | 3
+  note?: string
+  bought?: boolean
+  createdAt: number
 }

@@ -14,6 +14,9 @@ export const BACKUP_TABLES = [
   'debts',
   'assets',
   'receipts',
+  'events',
+  'challenges',
+  'wishlist',
 ] as const
 
 export type BackupTable = (typeof BACKUP_TABLES)[number]
@@ -42,6 +45,9 @@ const tableSchemas: Record<BackupTable, z.ZodTypeAny> = {
   debts: z.array(row),
   assets: z.array(row),
   receipts: z.array(row),
+  events: z.array(row),
+  challenges: z.array(row),
+  wishlist: z.array(row),
 }
 
 const dataShape = {} as Record<BackupTable, z.ZodTypeAny>
