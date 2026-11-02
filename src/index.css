@@ -1,0 +1,72 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-accent: #2f6bff;
+  --color-accent-soft: #7aa2ff;
+  --color-ink: #0a0a0b;
+  --color-paper: #f5f6f8;
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-paper text-ink dark:bg-ink min-h-dvh antialiased dark:text-white;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Liquid glass surface */
+@utility glass {
+  background: color-mix(in oklab, white 62%, transparent);
+  border: 1px solid color-mix(in oklab, white 80%, transparent);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, white 90%, transparent),
+    0 10px 30px -12px rgb(15 23 42 / 0.18);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+
+  &:where(.dark, .dark *) {
+    background: color-mix(in oklab, white 6%, transparent);
+    border-color: color-mix(in oklab, white 10%, transparent);
+    box-shadow:
+      inset 0 1px 0 0 color-mix(in oklab, white 12%, transparent),
+      0 20px 40px -20px rgb(0 0 0 / 0.7);
+  }
+}
+
+/* Slow-drifting blue glow behind everything */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, -3%, 0) scale(1.08);
+  }
+}
+
+.backdrop-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  animation: drift 18s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop-orb {
+    animation: none;
+  }
+}
