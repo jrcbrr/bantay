@@ -44,16 +44,14 @@ const tableSchemas: Record<BackupTable, z.ZodTypeAny> = {
   receipts: z.array(row),
 }
 
+const dataShape = {} as Record<BackupTable, z.ZodTypeAny>
+for (const t of BACKUP_TABLES) dataShape[t] = tableSchemas[t].optional().default([])
+
 const backupSchema = z.object({
   app: z.literal('bantay'),
   format: z.literal(1),
   exportedAt: z.string(),
-  data: z.object(
-    Object.fromEntries(BACKUP_TABLES.map((t) => [t, tableSchemas[t].optional().default([])])) as Record<
-      BackupTable,
-      z.ZodTypeAny
-    >,
-  ),
+  data: z.object(dataShape),
 })
 
 export interface BackupFile {
