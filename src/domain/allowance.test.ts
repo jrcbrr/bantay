@@ -21,6 +21,27 @@ describe('currentCycle', () => {
     expect(c.daysLeft).toBe(7)
   })
 
+  const school = { cycle: 'days', weekday: 0, dayOfMonth: 1, days: [1, 2, 3, 4, 5] } as const
+
+  it('school days on a Tuesday: baon today, next one tomorrow', () => {
+    expect(currentCycle(now, school)).toEqual({ start: '2026-11-03', nextAllowance: '2026-11-04', daysLeft: 1 })
+  })
+
+  it("school days on a Friday: Friday's baon lasts until Monday", () => {
+    const fri = new Date(2026, 10, 6, 9)
+    expect(currentCycle(fri, school)).toEqual({ start: '2026-11-06', nextAllowance: '2026-11-09', daysLeft: 3 })
+  })
+
+  it('school days on a Saturday: still in Friday’s cycle', () => {
+    const sat = new Date(2026, 10, 7, 9)
+    expect(currentCycle(sat, school)).toEqual({ start: '2026-11-06', nextAllowance: '2026-11-09', daysLeft: 2 })
+  })
+
+  it('days with no days picked behaves like daily', () => {
+    const c = currentCycle(now, { cycle: 'days', weekday: 0, dayOfMonth: 1, days: [] })
+    expect(c.daysLeft).toBe(1)
+  })
+
   it('monthly on the 15th: cycle started last month', () => {
     const c = currentCycle(now, { cycle: 'monthly', weekday: 0, dayOfMonth: 15 })
     expect(c).toEqual({ start: '2026-10-15', nextAllowance: '2026-11-15', daysLeft: 12 })

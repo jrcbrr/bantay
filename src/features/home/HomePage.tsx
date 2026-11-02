@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { ChevronRight, Eye } from 'lucide-react'
 import { useMoney } from '@/db/hooks.ts'
 import { fromISODate } from '@/domain/dates.ts'
+import { AccountIcon } from '@/ui/AccountIcon.tsx'
 import { Amount } from '@/ui/Amount.tsx'
 import { GlassCard } from '@/ui/GlassCard.tsx'
 import { TransactionRow } from '@/features/activity/TransactionRow.tsx'
@@ -31,9 +32,15 @@ export function HomePage() {
           {accounts
             .filter((a) => a.kind !== 'credit')
             .map((a) => (
-              <div key={a.id} className="shrink-0 rounded-2xl bg-ink/[0.04] px-3 py-2 dark:bg-white/[0.06]">
-                <p className="text-xs text-ink/50 dark:text-white/50">{a.name}</p>
-                <Amount value={balances.get(a.id) ?? 0} className="text-sm font-medium" />
+              <div
+                key={a.id}
+                className="flex shrink-0 items-center gap-2.5 rounded-2xl bg-ink/[0.04] py-2 pr-4 pl-2 dark:bg-white/[0.06]"
+              >
+                <AccountIcon account={a} size={32} />
+                <div>
+                  <p className="text-xs text-ink/50 dark:text-white/50">{a.name}</p>
+                  <Amount value={balances.get(a.id) ?? 0} className="text-sm font-medium" />
+                </div>
               </div>
             ))}
         </div>

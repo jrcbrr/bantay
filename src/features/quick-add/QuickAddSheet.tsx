@@ -7,6 +7,7 @@ import { useAccounts, useCategories } from '@/db/hooks.ts'
 import { toISODate, today } from '@/domain/dates.ts'
 import { parseAmount } from '@/domain/money.ts'
 import type { Template, TransactionType } from '@/domain/types.ts'
+import { AccountIcon } from '@/ui/AccountIcon.tsx'
 
 interface Props {
   open: boolean
@@ -150,7 +151,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
 
             <Section title={type === 'income' ? 'Into' : 'From'}>
               <Chips
-                items={accounts.map((a) => [a.id, a.name])}
+                items={accounts.map((a) => [a.id, a.name, <AccountIcon account={a} size={20} />])}
                 value={accountId}
                 onChange={setAccountId}
               />
@@ -159,7 +160,9 @@ export function QuickAddSheet({ open, onClose }: Props) {
             {type === 'transfer' ? (
               <Section title="To">
                 <Chips
-                  items={accounts.filter((a) => a.id !== accountId).map((a) => [a.id, a.name])}
+                  items={accounts
+                    .filter((a) => a.id !== accountId)
+                    .map((a) => [a.id, a.name, <AccountIcon account={a} size={20} />])}
                   value={toAccountId}
                   onChange={setToAccountId}
                 />
@@ -217,22 +220,23 @@ function Chips({
   value,
   onChange,
 }: {
-  items: [string, string][]
+  items: [id: string, label: string, icon?: ReactNode][]
   value: string
   onChange: (v: string) => void
 }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map(([id, label]) => (
+      {items.map(([id, label, icon]) => (
         <button
           key={id}
           onClick={() => onChange(id)}
-          className={`rounded-full px-3 py-1.5 text-sm transition ${
+          className={`flex items-center gap-1.5 rounded-full py-1.5 text-sm transition ${icon ? 'pr-3 pl-1.5' : 'px-3'} ${
             value === id
               ? 'bg-ink text-white dark:bg-white dark:text-ink'
               : 'bg-ink/[0.05] text-ink/70 dark:bg-white/[0.07] dark:text-white/70'
           }`}
         >
+          {icon}
           {label}
         </button>
       ))}

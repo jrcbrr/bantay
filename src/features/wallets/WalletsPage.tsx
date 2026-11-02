@@ -1,17 +1,12 @@
-import { CreditCard, Landmark, Smartphone, Wallet, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { useMoney } from '@/db/hooks.ts'
 import { netWorth } from '@/domain/balance.ts'
-import type { AccountKind } from '@/domain/types.ts'
+import type { Account, AccountKind } from '@/domain/types.ts'
+import { AccountIcon } from '@/ui/AccountIcon.tsx'
 import { Amount } from '@/ui/Amount.tsx'
-import { GlassCard } from '@/ui/GlassCard.tsx'
 import { PageHeader } from '@/ui/PageHeader.tsx'
-
-const kindIcon: Record<AccountKind, LucideIcon> = {
-  cash: Wallet,
-  bank: Landmark,
-  ewallet: Smartphone,
-  credit: CreditCard,
-}
+import { AccountSheet } from './AccountSheet.tsx'
 
 const kindLabel: Record<AccountKind, string> = {
   cash: 'Cash',
@@ -22,12 +17,13 @@ const kindLabel: Record<AccountKind, string> = {
 
 export function WalletsPage() {
   const { accounts, balances } = useMoney()
+  const [editing, setEditing] = useState<Account | null>(null)
 
   return (
     <>
       <PageHeader
         title="Wallets"
-        subtitle="Accounts & balances"
+        subtitle="Tap an account to change its icon"
         action={
           <div className="text-right">
             <p className="text-xs text-ink/50 dark:text-white/50">Net worth</p>
@@ -36,25 +32,23 @@ export function WalletsPage() {
         }
       />
       <div className="grid gap-3 sm:grid-cols-2">
-        {accounts.map((a) => {
-          const Icon = kindIcon[a.kind]
-          return (
-            <GlassCard key={a.id} className="flex items-center gap-4">
-              <span className="bg-accent/12 text-accent dark:text-accent-soft flex h-12 w-12 items-center justify-center rounded-2xl">
-                <Icon size={22} />
-              </span>
-              <div className="flex-1">
-                <p className="font-medium">{a.name}</p>
-                <p className="text-xs text-ink/50 dark:text-white/50">{kindLabel[a.kind]}</p>
-              </div>
-              <Amount value={balances.get(a.id) ?? 0} className="text-lg font-semibold" />
-            </GlassCard>
-          )
-        })}
+        {accounts.map((a) => (
+          <button
+            key={a.id}
+            onClick={() => setEditing(a)}
+            className="glass flex items-center gap-4 rounded-3xl p-4 text-left transition active:scale-[0.99]"
+          >
+            <AccountIcon account={a} size={48} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{a.name}</p>
+              <p className="text-xs text-ink/50 dark:text-white/50">{kindLabel[a.kind]}</p>
+            </div>
+            <Amount value={balances.get(a.id) ?? 0} className="text-lg font-semibold" />
+            <ChevronRight size={18} className="text-ink/30 dark:text-white/30" />
+          </button>
+        ))}
       </div>
-      <p className="mt-6 text-center text-xs text-ink/40 dark:text-white/40">
-        Adding accounts, cards, installments and IOUs comes in upcoming milestones.
-      </p>
+      <AccountSheet account={editing} onClose={() => setEditing(null)} />
     </>
   )
 }

@@ -3,9 +3,14 @@ import type { Account, Category, Settings, Template } from '@/domain/types.ts'
 
 const now = Date.now()
 
+export const defaultAccountLooks: Record<string, { icon: string; color: string }> = {
+  cash: { icon: 'banknote', color: '#16a34a' },
+  gcash: { icon: 'smartphone', color: '#0a5cff' },
+}
+
 const accounts: Account[] = [
-  { id: 'cash', name: 'Cash', kind: 'cash', openingBalance: 0, icon: 'wallet', createdAt: now },
-  { id: 'gcash', name: 'GCash', kind: 'ewallet', openingBalance: 0, icon: 'smartphone', createdAt: now },
+  { id: 'cash', name: 'Cash', kind: 'cash', openingBalance: 0, ...defaultAccountLooks.cash!, createdAt: now },
+  { id: 'gcash', name: 'GCash', kind: 'ewallet', openingBalance: 0, ...defaultAccountLooks.gcash!, createdAt: now },
 ]
 
 const c = (id: string, name: string, kind: Category['kind'], icon: string, color: string): Category => ({
@@ -39,7 +44,8 @@ const templates: Template[] = [
 const settings: Settings = {
   id: 'app',
   theme: 'system',
-  allowanceCycle: 'weekly',
+  allowanceCycle: 'days',
+  allowanceDays: [1, 2, 3, 4, 5],
   allowanceWeekday: 1,
   allowanceDayOfMonth: 1,
 }

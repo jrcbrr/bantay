@@ -23,13 +23,46 @@ export function SettingsPage() {
             <Segmented
               value={s.allowanceCycle}
               options={[
-                ['daily', 'Daily'],
+                ['days', 'On set days'],
                 ['weekly', 'Weekly'],
                 ['monthly', 'Monthly'],
               ]}
               onChange={(v) => update({ allowanceCycle: v as AllowanceCycle })}
             />
           </Field>
+          {(s.allowanceCycle === 'days' || s.allowanceCycle === 'daily') && (
+            <div>
+              <div className="flex justify-between gap-1.5">
+                {weekdays.map((d, i) => {
+                  const days = s.allowanceDays ?? []
+                  const on = days.includes(i)
+                  return (
+                    <button
+                      key={d}
+                      aria-pressed={on}
+                      aria-label={d}
+                      onClick={() =>
+                        update({
+                          allowanceCycle: 'days',
+                          allowanceDays: on ? days.filter((x) => x !== i) : [...days, i].sort(),
+                        })
+                      }
+                      className={`flex h-10 flex-1 items-center justify-center rounded-xl text-sm font-semibold transition ${
+                        on
+                          ? 'bg-accent shadow-accent/30 text-white shadow-md'
+                          : 'bg-ink/[0.05] text-ink/50 dark:bg-white/[0.07] dark:text-white/50'
+                      }`}
+                    >
+                      {d.slice(0, 1)}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="mt-2 text-xs text-ink/50 dark:text-white/50">
+                Safe to spend stretches each baon until the next baon day — Friday's covers the weekend.
+              </p>
+            </div>
+          )}
           {s.allowanceCycle === 'weekly' && (
             <Field label="Every">
               <select

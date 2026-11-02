@@ -14,8 +14,12 @@ export interface Account {
   kind: AccountKind
   /** Balance when the account was added to Bantay. Negative for credit card debt. */
   openingBalance: Centavos
+  /** Tile background color. */
   color?: string
+  /** Lucide icon key (see ui/AccountIcon). */
   icon?: string
+  /** User-uploaded image (small PNG data URL); overrides `icon` when set. */
+  iconImage?: string
   archived?: boolean
   createdAt: number
 }
@@ -115,12 +119,15 @@ export interface Debt {
   createdAt: number
 }
 
-export type AllowanceCycle = 'daily' | 'weekly' | 'monthly'
+/** `days` = baon on specific weekdays only (e.g. school days Mon–Fri). */
+export type AllowanceCycle = 'days' | 'daily' | 'weekly' | 'monthly'
 
 export interface Settings {
   id: 'app'
   theme: 'system' | 'light' | 'dark'
   allowanceCycle: AllowanceCycle
+  /** Weekdays you get baon on (0 = Sunday … 6 = Saturday), used when cycle is `days`. */
+  allowanceDays: number[]
   /** 0 = Sunday … 6 = Saturday, used when cycle is weekly. */
   allowanceWeekday: number
   /** 1–28, used when cycle is monthly. */

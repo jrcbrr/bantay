@@ -38,9 +38,10 @@ export function useMoney() {
       .filter((t) => t.type === 'expense' && t.date === todayISO)
       .reduce((s, t) => s + t.amount, 0)
     const cycle = currentCycle(new Date(), {
-      cycle: settings?.allowanceCycle ?? 'weekly',
+      cycle: settings?.allowanceCycle ?? 'days',
       weekday: settings?.allowanceWeekday ?? 1,
       dayOfMonth: settings?.allowanceDayOfMonth ?? 1,
+      days: settings?.allowanceDays ?? [1, 2, 3, 4, 5],
     })
     const safeToday = safeToSpendToday({
       available,

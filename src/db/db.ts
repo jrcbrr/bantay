@@ -11,7 +11,7 @@ import type {
   Template,
   Transaction,
 } from '@/domain/types.ts'
-import { seed } from './seed.ts'
+import { defaultAccountLooks, seed } from './seed.ts'
 
 export class BantayDB extends Dexie {
   declare accounts: EntityTable<Account, 'id'>
@@ -39,6 +39,28 @@ export class BantayDB extends Dexie {
       debts: 'id, settled',
       settings: 'id',
     })
+    // v2: school-day baon cycle + account icons for existing installs.
+    this.version(2)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((s: Settings) => {
+            s.allowanceCycle = 'days'
+            s.allowanceDays = [1, 2, 3, 4, 5]
+          })
+        await tx
+          .table('accounts')
+          .toCollection()
+          .modify((a: Account) => {
+            const preset = defaultAccountLooks[a.id]
+            if (preset) {
+              a.icon = preset.icon
+              a.color = preset.color
+            }
+          })
+      })
     this.on('populate', (tx) => seed(tx))
   }
 }
