@@ -14,7 +14,7 @@
 ## Features
 
 **Everyday**
-- **Quick add** with a one-line input: type `mcdo 189 cash`, `baon 150 gcash`, or `transfer 500 gcash to cash` and the form fills itself in. Parsing happens offline and understands everyday Filipino spending words.
+- **Quick add** with account and category chips, plus templates for one-tap entries
 - **Editable quick templates** for things you log every day (baon, fare, lunch)
 - **Safe to spend today**: what's left until your next baon, after setting aside bills due before then. The "No baon today" switch covers holidays and days without class.
 - **Receipts inbox**: snap a receipt now and log it later. The photo stays attached to the transaction.
@@ -51,7 +51,7 @@ src/
   ui/         glass design system and form primitives
   domain/     pure logic, all unit tested:
               balances · baon cycle · safe to spend · budgets · recurring bills
-              forecast · search · calendar · assets · credit & debts · one-line parser
+              forecast · search · calendar · assets · credit & debts
   db/         Dexie schema and migrations, seed data, live-query hooks,
               actions, backup format
   features/   home · activity · receipts · quick-add · plan · wealth
