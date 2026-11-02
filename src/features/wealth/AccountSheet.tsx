@@ -4,6 +4,7 @@ import { db, newId } from '@/db/db.ts'
 import { parseAmount } from '@/domain/money.ts'
 import type { Account, AccountKind } from '@/domain/types.ts'
 import { AccountIcon, accountColors, accountIcons, imageFileToIcon } from '@/ui/AccountIcon.tsx'
+import { Toggle } from '@/ui/form.tsx'
 import { Sheet } from '@/ui/Sheet.tsx'
 
 export type AccountSheetTarget = Account | 'new' | null
@@ -35,6 +36,7 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
   const [icon, setIcon] = useState<string | undefined>()
   const [color, setColor] = useState<string | undefined>()
   const [iconImage, setIconImage] = useState<string | undefined>()
+  const [savings, setSavings] = useState(false)
   const [error, setError] = useState('')
   const [confirmArchive, setConfirmArchive] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -50,6 +52,7 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
       setIcon(undefined)
       setColor('#2f6bff')
       setIconImage(undefined)
+      setSavings(false)
     } else {
       setName(target.name)
       setKind(target.kind)
@@ -58,6 +61,7 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
       setIcon(target.icon)
       setColor(target.color)
       setIconImage(target.iconImage)
+      setSavings(!!target.savings)
     }
   }, [target])
 
@@ -79,7 +83,7 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
     if (!valid || startAmount === null) return
     // Credit card balances are money owed, so store them as negative.
     const openingBalance = kind === 'credit' ? -startAmount : startAmount
-    const fields = { name: name.trim(), kind, openingBalance, icon, color, iconImage }
+    const fields = { name: name.trim(), kind, openingBalance, icon, color, iconImage, savings: kind !== 'credit' && savings }
     if (account) await db.accounts.update(account.id, fields)
     else await db.accounts.add({ id: newId(), ...fields, createdAt: Date.now() })
     onClose()
@@ -141,6 +145,17 @@ export function AccountSheet({ target, activeCount, onClose }: Props) {
               : 'What was in it before you started tracking. Transactions add and subtract from here.'}
           </p>
         </div>
+
+        {kind !== 'credit' && (
+          <div className="rounded-2xl bg-ink/[0.03] p-4 dark:bg-white/[0.04]">
+            <Toggle
+              checked={savings}
+              onChange={setSavings}
+              label="Savings account"
+              hint="Locked or set-aside money. Counts toward net worth, not safe to spend."
+            />
+          </div>
+        )}
 
         <div>
           <p className={label}>Your own image</p>

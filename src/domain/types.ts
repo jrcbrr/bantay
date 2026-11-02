@@ -20,6 +20,8 @@ export interface Account {
   icon?: string
   /** User-uploaded image (small PNG data URL); overrides `icon` when set. */
   iconImage?: string
+  /** Savings / locked money: counts toward net worth but not safe-to-spend. */
+  savings?: boolean
   archived?: boolean
   createdAt: number
 }
@@ -54,6 +56,7 @@ export interface Transaction {
   debtId?: ID
   installmentId?: ID
   recurringId?: ID
+  receiptId?: ID
   createdAt: number
 }
 
@@ -69,20 +72,26 @@ export interface Template {
   pinned?: boolean
 }
 
+export type BudgetPeriod = 'weekly' | 'monthly'
+
 export interface Budget {
   id: ID
   categoryId: ID
-  /** Spending limit per allowance cycle. */
   limit: Centavos
+  period: BudgetPeriod
 }
 
 export interface Goal {
   id: ID
   name: string
   target: Centavos
+  /** When linked, progress is that account's balance. */
   accountId?: ID
-  deadline?: ISODate
+  /** Manual progress, used when no account is linked. */
   saved: Centavos
+  deadline?: ISODate
+  color: string
+  createdAt: number
 }
 
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
@@ -96,8 +105,51 @@ export interface Recurring {
   categoryId?: ID
   frequency: Frequency
   nextDue: ISODate
+  /** Day of month the bill is anchored to (monthly/yearly), so Jan 31 → Feb 28 → Mar 31. */
+  anchorDay?: number
   isSubscription?: boolean
   active: boolean
+  createdAt: number
+}
+
+export type AssetKind = 'gadget' | 'vehicle' | 'collectible' | 'jewelry' | 'property' | 'other'
+
+export interface Asset {
+  id: ID
+  name: string
+  kind: AssetKind
+  purchasePrice: Centavos
+  currentValue: Centavos
+  purchaseDate?: ISODate
+  photo?: string
+  note?: string
+  createdAt: number
+}
+
+export interface Receipt {
+  id: ID
+  /** Compressed JPEG data URL. */
+  image: string
+  status: 'pending' | 'done'
+  transactionId?: ID
+  note?: string
+  createdAt: number
+}
+
+export type DashboardCardId =
+  | 'balance'
+  | 'safe'
+  | 'forecast'
+  | 'flow'
+  | 'budgets'
+  | 'bills'
+  | 'liquidity'
+  | 'networth'
+  | 'recent'
+
+export interface DashboardCard {
+  id: DashboardCardId
+  hidden?: boolean
 }
 
 export interface Installment {
@@ -134,5 +186,7 @@ export interface Settings {
   allowanceWeekday: number
   /** 1–28, used when cycle is monthly. */
   allowanceDayOfMonth: number
+  /** Home dashboard order and visibility. */
+  dashboard?: DashboardCard[]
   pinHash?: string
 }

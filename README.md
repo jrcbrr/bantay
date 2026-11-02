@@ -6,12 +6,13 @@
 
 ## Features
 
-- **Wallets** — cash, GCash, banks, credit cards; spending deducts from the account that paid
-- **Quick add** with templates (baon, fare, lunch)
-- **Safe to spend today** — what's left until your next baon, spread across the remaining days
-- **Liquid glass UI** in light and dark, installable as an app, works without internet
-
-On the roadmap: budgets & goals, recurring bills & subscriptions, credit card installments, debts & IOUs, natural-language entry (`mcdo 189 cash`), insights, backup & PIN lock.
+- **Dashboard**: cards you can reorder and hide, including balance, safe to spend, a 30-day forecast, money flow, budgets, upcoming bills, spendable vs savings, and net worth
+- **Safe to spend today**: what's left until your next baon, after setting aside bills due before then
+- **Privacy mode**: one tap hides every amount as `₱****`
+- **Plan**: weekly or monthly category budgets, savings goals, and recurring bills and subscriptions with one-tap "Paid"
+- **Wealth**: accounts grouped into spendable, savings, and credit; an assets tracker with gain or loss against what you paid
+- **Activity**: search, filters, a calendar view, and a receipts inbox where you snap now and log later
+- **Liquid glass UI** in light and dark mode, installable, works fully offline
 
 ## Stack
 
@@ -21,9 +22,10 @@ React 19 · TypeScript · Vite · Tailwind CSS v4 · Dexie (IndexedDB) · Motion
 src/
   app/        shell, routing, theme
   ui/         glass design system
-  domain/     pure money logic (balances, allowance cycle, safe-to-spend) — unit tested
-  db/         Dexie schema, seed data, live-query hooks
-  features/   home · activity · quick-add · budget · wallets · settings
+  domain/     pure logic: balances, baon cycle, safe-to-spend, budgets, bills,
+              forecast, search, calendar, assets (all unit tested)
+  db/         Dexie schema + migrations, seed data, live-query hooks, actions
+  features/   home (dashboard) · activity · receipts · quick-add · plan · wealth · categories · settings
 ```
 
 ## Develop

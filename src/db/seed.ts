@@ -1,5 +1,5 @@
 import type { Transaction as DexieTx } from 'dexie'
-import type { Account, Category, Settings, Template } from '@/domain/types.ts'
+import type { Account, Category, DashboardCard, Settings, Template } from '@/domain/types.ts'
 
 const now = Date.now()
 
@@ -63,6 +63,18 @@ const templates: Template[] = [
   { id: 'tpl-lunch', label: 'Lunch', type: 'expense', categoryId: 'food', accountId: 'cash', pinned: true },
 ]
 
+export const defaultDashboard: DashboardCard[] = [
+  { id: 'balance' },
+  { id: 'safe' },
+  { id: 'forecast' },
+  { id: 'flow' },
+  { id: 'budgets' },
+  { id: 'bills' },
+  { id: 'liquidity' },
+  { id: 'networth' },
+  { id: 'recent' },
+]
+
 const settings: Settings = {
   id: 'app',
   theme: 'system',
@@ -70,6 +82,7 @@ const settings: Settings = {
   allowanceDays: [1, 2, 3, 4, 5],
   allowanceWeekday: 1,
   allowanceDayOfMonth: 1,
+  dashboard: defaultDashboard,
 }
 
 /** Runs once, the first time the database is created on this device. */
