@@ -12,7 +12,9 @@ import type {
   Settings,
   Template,
   Transaction,
+  WishItem,
 } from '@/domain/types.ts'
+import type { Challenge, EventBudget } from '@/domain/planExtras.ts'
 import { debtCategoryIds, defaultAccountLooks, defaultCategories, defaultDashboard, seed } from './seed.ts'
 
 export class BantayDB extends Dexie {
@@ -28,6 +30,9 @@ export class BantayDB extends Dexie {
   declare settings: EntityTable<Settings, 'id'>
   declare assets: EntityTable<Asset, 'id'>
   declare receipts: EntityTable<Receipt, 'id'>
+  declare events: EntityTable<EventBudget, 'id'>
+  declare challenges: EntityTable<Challenge, 'id'>
+  declare wishlist: EntityTable<WishItem, 'id'>
 
   constructor(name = 'bantay') {
     super(name)
@@ -105,6 +110,14 @@ export class BantayDB extends Dexie {
           if (!(await table.get(cat.id))) await table.add(cat)
         }
       })
+    // v6: event budgets, ipon challenges, wishlist; round-up and event links on transactions.
+    this.version(6).stores({
+      transactions:
+        'id, date, type, accountId, toAccountId, categoryId, debtId, installmentId, receiptId, recurringId, eventId, roundUpOf',
+      events: 'id, start, end',
+      challenges: 'id, createdAt',
+      wishlist: 'id, bought, createdAt',
+    })
     this.on('populate', (tx) => seed(tx))
   }
 }

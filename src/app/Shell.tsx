@@ -4,6 +4,7 @@ import { Backdrop } from '@/ui/Backdrop.tsx'
 import { QuickAddSheet } from '@/features/quick-add/QuickAddSheet.tsx'
 import { useEffect } from 'react'
 import { useSettings } from '@/db/hooks.ts'
+import { GoalCelebration } from './GoalCelebration.tsx'
 import { LockScreen } from './LockScreen.tsx'
 import { useLock, watchVisibility } from './pin.ts'
 import { useSheets } from './sheets.ts'
@@ -102,6 +103,7 @@ export function Shell() {
       </nav>
 
       <QuickAddSheet />
+      <GoalCelebration />
     </div>
   )
 }

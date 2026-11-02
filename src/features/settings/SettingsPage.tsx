@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { ChevronRight, Tags, Zap } from 'lucide-react'
 import { BackupCard } from './BackupCard.tsx'
 import { PinCard } from './PinCard.tsx'
+import { RoundUpCard } from './RoundUpCard.tsx'
 import { db } from '@/db/db.ts'
 import { useSettings } from '@/db/hooks.ts'
 import type { AllowanceCycle, Settings } from '@/domain/types.ts'
@@ -111,6 +112,7 @@ export function SettingsPage() {
           </Link>
         </GlassCard>
 
+        <RoundUpCard />
         <BackupCard />
         <PinCard />
 
