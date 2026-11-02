@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router'
-import { ArrowLeftRight, Gem, Home, Plus, Settings, Target, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, BarChart3, Gem, Home, Plus, Settings, Target, type LucideIcon } from 'lucide-react'
 import { Backdrop } from '@/ui/Backdrop.tsx'
 import { QuickAddSheet } from '@/features/quick-add/QuickAddSheet.tsx'
 import { useEffect } from 'react'
@@ -70,6 +70,9 @@ export function Shell() {
         >
           <Plus size={18} /> Add transaction
         </button>
+        <NavLink to="/insights" className={linkClass}>
+          <BarChart3 size={18} /> Insights
+        </NavLink>
         <NavLink to="/settings" className={linkClass}>
           <Settings size={18} /> Settings
         </NavLink>

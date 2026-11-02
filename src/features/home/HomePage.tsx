@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { Settings, SlidersHorizontal } from 'lucide-react'
+import { BarChart3, Settings, SlidersHorizontal } from 'lucide-react'
 import { useMoney } from '@/db/hooks.ts'
 import { defaultDashboard } from '@/db/seed.ts'
 import { PrivacyToggle } from '@/ui/PrivacyToggle.tsx'
@@ -25,6 +25,9 @@ export function HomePage() {
         </div>
         <div className="flex gap-2">
           <PrivacyToggle />
+          <Link to="/insights" aria-label="Insights" className={`${iconBtn} md:hidden`}>
+            <BarChart3 size={18} />
+          </Link>
           <button aria-label="Customize dashboard" onClick={() => setCustomizing(true)} className={iconBtn}>
             <SlidersHorizontal size={18} />
           </button>

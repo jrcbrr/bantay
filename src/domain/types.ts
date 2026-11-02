@@ -147,6 +147,7 @@ export type DashboardCardId =
   | 'safe'
   | 'forecast'
   | 'flow'
+  | 'insights'
   | 'budgets'
   | 'bills'
   | 'liquidity'
