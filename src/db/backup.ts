@@ -55,7 +55,7 @@ export async function downloadCsv(): Promise<void> {
   ])
   const csv = [header, ...rows].map((r) => r.map((v) => csvCell(v)).join(',')).join('\r\n')
   // BOM so Excel opens the ₱ and accented names correctly
-  download(`bantay-transactions-${toISODate(today())}.csv`, `﻿${csv}`, 'text/csv;charset=utf-8')
+  download(`bantay-transactions-${toISODate(today())}.csv`, `\uFEFF${csv}`, 'text/csv;charset=utf-8')
 }
 
 /** Wipe everything (used by "forgot PIN"). The app re-seeds on next load. */
