@@ -1,79 +1,54 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, Eye } from 'lucide-react'
-import { useLookups, useMoney } from '@/db/hooks.ts'
-import { AccountIcon } from '@/ui/AccountIcon.tsx'
-import { Amount } from '@/ui/Amount.tsx'
-import { GlassCard } from '@/ui/GlassCard.tsx'
-import { TransactionRow } from '@/features/activity/TransactionRow.tsx'
+import { Settings, SlidersHorizontal } from 'lucide-react'
+import { useMoney } from '@/db/hooks.ts'
+import { defaultDashboard } from '@/db/seed.ts'
+import { PrivacyToggle } from '@/ui/PrivacyToggle.tsx'
+import { dashboardCards } from './cards.tsx'
+import { CustomizeSheet } from './CustomizeSheet.tsx'
 
 const dayFmt = new Intl.DateTimeFormat('en-PH', { weekday: 'long', month: 'short', day: 'numeric' })
+const iconBtn = 'glass flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95'
 
 export function HomePage() {
-  const { accounts, balances, available, safeToday, spentToday, transactions } = useMoney()
-  const lookups = useLookups()
-  const recent = transactions.slice(0, 5)
+  const money = useMoney()
+  const [customizing, setCustomizing] = useState(false)
+  const layout = money.settings?.dashboard ?? defaultDashboard
+  const visible = layout.filter((c) => !c.hidden && dashboardCards[c.id])
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between pt-2 pb-1">
-        <div>
+      <header className="flex items-center justify-between gap-3 pt-2 pb-1">
+        <div className="min-w-0">
           <p className="text-sm text-ink/50 dark:text-white/50">{dayFmt.format(new Date())}</p>
           <h1 className="text-3xl font-semibold tracking-tight">Bantay</h1>
         </div>
-        <Eye className="text-accent dark:text-accent-soft" size={28} />
-      </header>
-
-      {/* Total balance */}
-      <GlassCard className="relative overflow-hidden">
-        <p className="text-sm text-ink/55 dark:text-white/55">Available money</p>
-        <Amount value={available} className="mt-1 block text-4xl font-semibold tracking-tight" />
-        <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
-          {accounts
-            .filter((a) => a.kind !== 'credit')
-            .map((a) => (
-              <div
-                key={a.id}
-                className="flex shrink-0 items-center gap-2.5 rounded-2xl bg-ink/[0.04] py-2 pr-4 pl-2 dark:bg-white/[0.06]"
-              >
-                <AccountIcon account={a} size={32} />
-                <div>
-                  <p className="text-xs text-ink/50 dark:text-white/50">{a.name}</p>
-                  <Amount value={balances.get(a.id) ?? 0} className="text-sm font-medium" />
-                </div>
-              </div>
-            ))}
-        </div>
-      </GlassCard>
-
-      {/* Safe to spend */}
-      <GlassCard className="bg-accent/90! dark:bg-accent/80! border-white/20! text-white">
-        <p className="text-sm text-white/75">Safe to spend today</p>
-        <Amount value={safeToday} className="mt-1 block text-3xl font-semibold tracking-tight" />
-        <p className="mt-3 text-xs text-white/75">
-          Spent today: <Amount value={spentToday} />
-        </p>
-      </GlassCard>
-
-      {/* Recent */}
-      <GlassCard className="p-2!">
-        <div className="flex items-center justify-between px-3 pt-2 pb-1">
-          <h2 className="font-semibold">Recent</h2>
-          <Link to="/activity" className="text-accent dark:text-accent-soft flex items-center text-sm">
-            See all <ChevronRight size={16} />
+        <div className="flex gap-2">
+          <PrivacyToggle />
+          <button aria-label="Customize dashboard" onClick={() => setCustomizing(true)} className={iconBtn}>
+            <SlidersHorizontal size={18} />
+          </button>
+          <Link to="/settings" aria-label="Settings" className={`${iconBtn} md:hidden`}>
+            <Settings size={18} />
           </Link>
         </div>
-        {recent.length === 0 ? (
-          <p className="px-3 py-8 text-center text-sm text-ink/50 dark:text-white/50">
-            Nothing yet. Tap <span className="text-accent font-semibold">+</span> to log your baon or an expense.
-          </p>
-        ) : (
-          <ul>
-            {recent.map((t) => (
-              <TransactionRow key={t.id} tx={t} lookups={lookups} />
-            ))}
-          </ul>
-        )}
-      </GlassCard>
+      </header>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {visible.map((c) => (
+          <div key={c.id} className={c.id === 'balance' || c.id === 'forecast' || c.id === 'recent' ? 'lg:col-span-2' : ''}>
+            {dashboardCards[c.id].render({ money })}
+          </div>
+        ))}
+      </div>
+
+      {visible.length === 0 && (
+        <button onClick={() => setCustomizing(true)} className="glass w-full rounded-3xl p-6 text-sm text-ink/55 dark:text-white/55">
+          All cards are hidden. Tap to choose what to show.
+        </button>
+      )}
+
+      <CustomizeSheet open={customizing} layout={layout} onClose={() => setCustomizing(false)} />
     </div>
   )
 }

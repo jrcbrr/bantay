@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeBalances, netWorth, totalAvailable } from './balance.ts'
+import { computeBalances, creditOwed, netWorth, totalAvailable, totalSavings } from './balance.ts'
 import type { Account, Transaction } from './types.ts'
 
 const acct = (id: string, kind: Account['kind'], openingBalance = 0): Account => ({
@@ -46,6 +46,16 @@ describe('computeBalances', () => {
     const b = computeBalances([cash, card], [])
     expect(totalAvailable([cash, card], b)).toBe(20000)
     expect(netWorth([cash, card], b)).toBe(-130000)
+  })
+
+  it('keeps savings out of spendable money but in net worth', () => {
+    const piggy: Account = { ...acct('piggy', 'bank', 300000), savings: true }
+    const all = [cash, gcash, piggy, card]
+    const b = computeBalances(all, [])
+    expect(totalAvailable(all, b)).toBe(20000)
+    expect(totalSavings(all, b)).toBe(300000)
+    expect(creditOwed(all, b)).toBe(150000)
+    expect(netWorth(all, b, 2500000)).toBe(20000 + 300000 - 150000 + 2500000)
   })
 
   it('ignores transactions for unknown accounts', () => {

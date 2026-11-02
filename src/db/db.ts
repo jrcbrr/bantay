@@ -1,6 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type {
   Account,
+  Asset,
+  Receipt,
   Budget,
   Category,
   Debt,
@@ -11,7 +13,7 @@ import type {
   Template,
   Transaction,
 } from '@/domain/types.ts'
-import { defaultAccountLooks, defaultCategories, seed } from './seed.ts'
+import { defaultAccountLooks, defaultCategories, defaultDashboard, seed } from './seed.ts'
 
 export class BantayDB extends Dexie {
   declare accounts: EntityTable<Account, 'id'>
@@ -24,6 +26,8 @@ export class BantayDB extends Dexie {
   declare installments: EntityTable<Installment, 'id'>
   declare debts: EntityTable<Debt, 'id'>
   declare settings: EntityTable<Settings, 'id'>
+  declare assets: EntityTable<Asset, 'id'>
+  declare receipts: EntityTable<Receipt, 'id'>
 
   constructor(name = 'bantay') {
     super(name)
@@ -71,6 +75,21 @@ export class BantayDB extends Dexie {
           const existing = await table.get(cat.id)
           await table.put(existing ? { ...existing, ...cat } : cat)
         }
+      })
+    // v4: assets, receipts inbox, budget periods, dashboard layout.
+    this.version(4)
+      .stores({
+        assets: 'id, kind',
+        receipts: 'id, status, createdAt',
+        transactions: 'id, date, type, accountId, toAccountId, categoryId, debtId, installmentId, receiptId',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('settings')
+          .toCollection()
+          .modify((s: Settings) => {
+            s.dashboard ??= defaultDashboard
+          })
       })
     this.on('populate', (tx) => seed(tx))
   }

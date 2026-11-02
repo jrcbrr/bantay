@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router'
-import { ArrowLeftRight, Home, Plus, PiggyBank, Settings, Wallet, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, Gem, Home, Plus, Settings, Target, type LucideIcon } from 'lucide-react'
 import { Backdrop } from '@/ui/Backdrop.tsx'
 import { QuickAddSheet } from '@/features/quick-add/QuickAddSheet.tsx'
 import { useSheets } from './sheets.ts'
@@ -14,8 +14,8 @@ interface Tab {
 const tabs: Tab[] = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/activity', label: 'Activity', icon: ArrowLeftRight },
-  { to: '/budget', label: 'Budget', icon: PiggyBank },
-  { to: '/wallets', label: 'Wallets', icon: Wallet },
+  { to: '/plan', label: 'Plan', icon: Target },
+  { to: '/wealth', label: 'Wealth', icon: Gem },
 ]
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -47,7 +47,7 @@ export function Shell() {
           ))}
         </nav>
         <button
-          onClick={openAdd}
+          onClick={() => openAdd()}
           className="bg-accent mb-2 flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white shadow-lg shadow-accent/30 transition active:scale-[0.98]"
         >
           <Plus size={18} /> Add transaction
@@ -68,7 +68,7 @@ export function Shell() {
             <TabLink key={t.to} {...t} />
           ))}
           <button
-            onClick={openAdd}
+            onClick={() => openAdd()}
             aria-label="Add transaction"
             className="bg-accent -my-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl shadow-accent/40 transition active:scale-95"
           >

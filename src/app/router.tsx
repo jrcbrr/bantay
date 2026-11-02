@@ -1,9 +1,9 @@
-import { createHashRouter } from 'react-router'
+import { createHashRouter, Navigate } from 'react-router'
 import { Shell } from './Shell.tsx'
 import { HomePage } from '@/features/home/HomePage.tsx'
 import { ActivityPage } from '@/features/activity/ActivityPage.tsx'
-import { BudgetPage } from '@/features/budget/BudgetPage.tsx'
-import { WalletsPage } from '@/features/wallets/WalletsPage.tsx'
+import { PlanPage } from '@/features/plan/PlanPage.tsx'
+import { WealthPage } from '@/features/wealth/WealthPage.tsx'
 import { SettingsPage } from '@/features/settings/SettingsPage.tsx'
 import { CategoriesPage } from '@/features/categories/CategoriesPage.tsx'
 
@@ -14,10 +14,14 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'activity', element: <ActivityPage /> },
-      { path: 'budget', element: <BudgetPage /> },
-      { path: 'wallets', element: <WalletsPage /> },
+      { path: 'plan', element: <PlanPage /> },
+      { path: 'wealth', element: <WealthPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'settings/categories', element: <CategoriesPage /> },
+      // Old routes from before the rework
+      { path: 'budget', element: <Navigate to="/plan" replace /> },
+      { path: 'wallets', element: <Navigate to="/wealth" replace /> },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
 ])

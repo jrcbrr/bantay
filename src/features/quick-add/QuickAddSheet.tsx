@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Trash2, X } from 'lucide-react'
+import { Camera, Receipt as ReceiptIcon, Trash2, X } from 'lucide-react'
 import { useSheets } from '@/app/sheets.ts'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, newId } from '@/db/db.ts'
@@ -10,6 +10,7 @@ import { parseAmount } from '@/domain/money.ts'
 import type { Template, TransactionType } from '@/domain/types.ts'
 import { AccountIcon } from '@/ui/AccountIcon.tsx'
 import { CategoryIcon } from '@/ui/CategoryIcon.tsx'
+import { addReceipt } from '@/features/receipts/receipts.ts'
 
 const types: [TransactionType, string][] = [
   ['expense', 'Expense'],
@@ -20,6 +21,7 @@ const types: [TransactionType, string][] = [
 export function QuickAddSheet() {
   const open = useSheets((s) => s.txOpen)
   const editing = useSheets((s) => s.editing)
+  const receipt = useSheets((s) => s.receipt)
   const onClose = useSheets((s) => s.close)
 
   const accounts = useAccounts()
@@ -35,11 +37,24 @@ export function QuickAddSheet() {
   const [date, setDate] = useState(() => toISODate(today()))
 
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [snapNote, setSnapNote] = useState('')
+  const [zoom, setZoom] = useState(false)
+  const cameraInput = useRef<HTMLInputElement>(null)
+
+  // Photo attached to the transaction being edited, if any.
+  const linkedReceiptId = editing?.receiptId
+  const linkedImage = useLiveQuery(
+    async () => (linkedReceiptId ? (await db.receipts.get(linkedReceiptId))?.image : undefined),
+    [linkedReceiptId],
+  )
+  const photo = receipt?.image ?? linkedImage
 
   // Reset (or load the transaction being edited) each time the sheet opens.
   useEffect(() => {
     if (!open) return
     setConfirmDelete(false)
+    setSnapNote('')
+    setZoom(false)
     if (editing) {
       setType(editing.type)
       setAmountText(String(editing.amount / 100))
@@ -94,16 +109,39 @@ export function QuickAddSheet() {
       note: note.trim() || undefined,
       date,
     }
-    if (editing) await db.transactions.update(editing.id, fields)
-    else await db.transactions.add({ id: newId(), ...fields, createdAt: Date.now() })
+    if (editing) {
+      await db.transactions.update(editing.id, fields)
+    } else {
+      const id = newId()
+      await db.transaction('rw', db.transactions, db.receipts, async () => {
+        await db.transactions.add({ id, ...fields, receiptId: receipt?.id, createdAt: Date.now() })
+        if (receipt) await db.receipts.update(receipt.id, { status: 'done', transactionId: id })
+      })
+    }
     onClose()
   }
 
   const remove = async () => {
     if (!editing) return
     if (!confirmDelete) return setConfirmDelete(true)
-    await db.transactions.delete(editing.id)
+    await db.transaction('rw', db.transactions, db.receipts, async () => {
+      await db.transactions.delete(editing.id)
+      // Send its receipt back to the inbox instead of losing the photo.
+      if (editing.receiptId) await db.receipts.update(editing.receiptId, { status: 'pending', transactionId: undefined })
+    })
     onClose()
+  }
+
+  /** Quick capture: save the photo to the inbox and deal with it later. */
+  const snapForLater = async (file: File | undefined) => {
+    if (!file) return
+    try {
+      await addReceipt(file)
+      setSnapNote('Saved to your receipts inbox')
+      setTimeout(onClose, 700)
+    } catch {
+      setSnapNote('Could not read that photo')
+    }
   }
 
   return (
@@ -146,8 +184,37 @@ export function QuickAddSheet() {
               </button>
             </div>
 
-            {!editing && templates.length > 0 && (
+            {photo && (
+              <button
+                onClick={() => setZoom(true)}
+                className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-ink/[0.04] p-2 text-left dark:bg-white/[0.06]"
+              >
+                <img src={photo} alt="Receipt" className="h-14 w-14 rounded-xl object-cover" />
+                <span className="flex items-center gap-1.5 text-sm text-ink/60 dark:text-white/60">
+                  <ReceiptIcon size={16} /> Receipt attached · tap to view
+                </span>
+              </button>
+            )}
+
+            {!editing && !receipt && (
               <div className="mb-4 flex gap-2 overflow-x-auto">
+                <button
+                  onClick={() => cameraInput.current?.click()}
+                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-ink/[0.05] px-3 py-1 text-xs font-medium dark:bg-white/[0.08]"
+                >
+                  <Camera size={14} /> Snap receipt for later
+                </button>
+                <input
+                  ref={cameraInput}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  hidden
+                  onChange={(e) => {
+                    void snapForLater(e.target.files?.[0])
+                    e.target.value = ''
+                  }}
+                />
                 {templates.map((t) => (
                   <button
                     key={t.id}
@@ -159,6 +226,7 @@ export function QuickAddSheet() {
                 ))}
               </div>
             )}
+            {snapNote && <p className="text-accent dark:text-accent-soft -mt-2 mb-3 text-sm font-medium">{snapNote}</p>}
 
             <label className="block">
               <span className="sr-only">Amount</span>
@@ -243,6 +311,15 @@ export function QuickAddSheet() {
               </button>
             </div>
           </motion.div>
+          {zoom && photo && (
+            <button
+              aria-label="Close receipt"
+              onClick={() => setZoom(false)}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4"
+            >
+              <img src={photo} alt="Receipt" className="max-h-full max-w-full rounded-xl object-contain" />
+            </button>
+          )}
         </>
       )}
     </AnimatePresence>

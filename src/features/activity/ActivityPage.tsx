@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CalendarDays, List, Search, X } from 'lucide-react'
-import { useLookups, useTransactions } from '@/db/hooks.ts'
+import { useLookups, usePendingReceipts, useTransactions } from '@/db/hooks.ts'
+import { ReceiptsInbox } from '@/features/receipts/ReceiptsInbox.tsx'
 import { monthKey } from '@/domain/calendar.ts'
 import { fromISODate, toISODate, today } from '@/domain/dates.ts'
 import { filterTransactions, type NameLookup } from '@/domain/filters.ts'
@@ -22,6 +23,8 @@ const typeFilters: [TransactionType | 'all', string][] = [
 export function ActivityPage() {
   const transactions = useTransactions()
   const lookups = useLookups()
+  const pendingReceipts = usePendingReceipts()
+  const [tab, setTab] = useState<'transactions' | 'receipts'>('transactions')
 
   const [view, setView] = useState<View>('list')
   const [query, setQuery] = useState('')
@@ -64,6 +67,7 @@ export function ActivityPage() {
         title="Activity"
         subtitle="Everything you've logged"
         action={
+          tab === 'transactions' && (
           <div className="flex rounded-xl bg-ink/[0.05] p-1 dark:bg-white/[0.07]">
             {(
               [
@@ -84,8 +88,36 @@ export function ActivityPage() {
               </button>
             ))}
           </div>
+          )
         }
       />
+
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-ink/[0.05] p-1 dark:bg-white/[0.07]">
+        {(
+          [
+            ['transactions', 'Transactions'],
+            ['receipts', 'Receipts'],
+          ] as const
+        ).map(([t, text]) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition ${
+              tab === t ? 'bg-white text-ink shadow-sm dark:bg-white/15 dark:text-white' : 'text-ink/55 dark:text-white/55'
+            }`}
+          >
+            {text}
+            {t === 'receipts' && pendingReceipts.length > 0 && (
+              <span className="bg-accent rounded-full px-1.5 text-[11px] font-semibold text-white">{pendingReceipts.length}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'receipts' ? (
+        <ReceiptsInbox />
+      ) : (
+        <>
 
       <div className="glass mb-3 flex items-center gap-2 rounded-2xl px-3">
         <Search size={18} className="shrink-0 text-ink/40 dark:text-white/40" />
@@ -152,6 +184,8 @@ export function ActivityPage() {
         <div className={view === 'calendar' && !selected ? 'mt-4' : ''}>
           <TransactionGroups transactions={shown} lookups={lookups} />
         </div>
+      )}
+        </>
       )}
     </>
   )
