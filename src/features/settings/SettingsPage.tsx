@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
+import { ChevronRight, Tags } from 'lucide-react'
 import { db } from '@/db/db.ts'
 import { useSettings } from '@/db/hooks.ts'
 import type { AllowanceCycle, Settings } from '@/domain/types.ts'
@@ -91,6 +93,13 @@ export function SettingsPage() {
             </Field>
           )}
         </GlassCard>
+
+        <Link to="/settings/categories" className="glass flex items-center gap-3 rounded-3xl p-5">
+          <Tags size={20} className="text-accent dark:text-accent-soft" />
+          <span className="flex-1 font-medium">Categories</span>
+          <span className="text-sm text-ink/50 dark:text-white/50">Add, rename, reorder</span>
+          <ChevronRight size={18} className="text-ink/30 dark:text-white/30" />
+        </Link>
 
         <GlassCard>
           <Field label="Appearance">

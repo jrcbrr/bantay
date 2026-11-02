@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { ChevronRight, Eye } from 'lucide-react'
-import { useMoney } from '@/db/hooks.ts'
+import { useLookups, useMoney } from '@/db/hooks.ts'
 import { AccountIcon } from '@/ui/AccountIcon.tsx'
 import { Amount } from '@/ui/Amount.tsx'
 import { GlassCard } from '@/ui/GlassCard.tsx'
@@ -10,6 +10,7 @@ const dayFmt = new Intl.DateTimeFormat('en-PH', { weekday: 'long', month: 'short
 
 export function HomePage() {
   const { accounts, balances, available, safeToday, spentToday, transactions } = useMoney()
+  const lookups = useLookups()
   const recent = transactions.slice(0, 5)
 
   return (
@@ -68,7 +69,7 @@ export function HomePage() {
         ) : (
           <ul>
             {recent.map((t) => (
-              <TransactionRow key={t.id} tx={t} />
+              <TransactionRow key={t.id} tx={t} lookups={lookups} />
             ))}
           </ul>
         )}
