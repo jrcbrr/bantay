@@ -1,17 +1,15 @@
 import { Link } from 'react-router'
 import { ChevronRight, Eye } from 'lucide-react'
 import { useMoney } from '@/db/hooks.ts'
-import { fromISODate } from '@/domain/dates.ts'
 import { AccountIcon } from '@/ui/AccountIcon.tsx'
 import { Amount } from '@/ui/Amount.tsx'
 import { GlassCard } from '@/ui/GlassCard.tsx'
 import { TransactionRow } from '@/features/activity/TransactionRow.tsx'
 
 const dayFmt = new Intl.DateTimeFormat('en-PH', { weekday: 'long', month: 'short', day: 'numeric' })
-const shortFmt = new Intl.DateTimeFormat('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })
 
 export function HomePage() {
-  const { accounts, balances, available, safeToday, spentToday, cycle, transactions } = useMoney()
+  const { accounts, balances, available, safeToday, spentToday, transactions } = useMoney()
   const recent = transactions.slice(0, 5)
 
   return (
@@ -48,18 +46,8 @@ export function HomePage() {
 
       {/* Safe to spend */}
       <GlassCard className="bg-accent/90! dark:bg-accent/80! border-white/20! text-white">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm text-white/75">Safe to spend today</p>
-            <Amount value={safeToday} className="mt-1 block text-3xl font-semibold tracking-tight" />
-          </div>
-          <div className="text-right text-xs text-white/75">
-            <p>
-              {cycle.daysLeft} day{cycle.daysLeft === 1 ? '' : 's'} until baon
-            </p>
-            <p>{shortFmt.format(fromISODate(cycle.nextAllowance))}</p>
-          </div>
-        </div>
+        <p className="text-sm text-white/75">Safe to spend today</p>
+        <Amount value={safeToday} className="mt-1 block text-3xl font-semibold tracking-tight" />
         <p className="mt-3 text-xs text-white/75">
           Spent today: <Amount value={spentToday} />
         </p>
