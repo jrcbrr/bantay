@@ -109,12 +109,12 @@ export function WealthPage() {
       </GlassCard>
 
       <GroupTitle total={available}>Spendable</GroupTitle>
-      <div className="grid gap-3 sm:grid-cols-2">{spendable.map(accountRow)}</div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{spendable.map(accountRow)}</div>
 
       {saved.length > 0 && (
         <>
           <GroupTitle total={savings}>Savings</GroupTitle>
-          <div className="grid gap-3 sm:grid-cols-2">{saved.map(accountRow)}</div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{saved.map(accountRow)}</div>
         </>
       )}
 
