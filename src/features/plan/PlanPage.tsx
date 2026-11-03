@@ -164,7 +164,7 @@ export function PlanPage() {
           {events.length === 0 ? (
             <Empty>Planning a field trip, Christmas or a birthday? Give it its own budget for those dates.</Empty>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {events.map((e) => {
                 const spent = eventSpent(e, transactions)
                 const ratio = e.limit > 0 ? spent / e.limit : 0
@@ -207,7 +207,7 @@ export function PlanPage() {
           {goals.length === 0 ? (
             <Empty>Saving up for something? Add a goal and link it to a savings account.</Empty>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {goals.map((g) => {
                 const saved = g.accountId ? Math.max(0, balances.get(g.accountId) ?? 0) : g.saved
                 const ratio = g.target > 0 ? saved / g.target : 0
