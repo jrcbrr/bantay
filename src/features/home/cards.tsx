@@ -121,7 +121,9 @@ function ForecastCard({ money }: CardProps) {
   const baon = averageBaon(transactions, now, days)
   const points = forecast({ startBalance: available, today: now, days: 30, dailySpend: pace, baonPerDay: baon, baonDays: days, recurring })
   const end = points[points.length - 1]!
-  const shortfall = firstShortfall(points)
+  // Already below zero today is its own message; otherwise look for the first future day under zero.
+  const belowNow = available < 0
+  const shortfall = belowNow ? undefined : firstShortfall(points.slice(1))
 
   return (
     <GlassCard>
@@ -147,6 +149,11 @@ function ForecastCard({ money }: CardProps) {
             </p>
           </div>
           <ForecastChart points={points} />
+          {belowNow && (
+            <p className="mt-2 flex items-center gap-1.5 rounded-xl bg-red-500/10 px-3 py-2 text-xs font-medium text-red-700 dark:text-red-300">
+              <AlertTriangle size={14} /> Your spendable money is below zero right now
+            </p>
+          )}
           {shortfall && (
             <p className="mt-2 flex items-center gap-1.5 rounded-xl bg-red-500/10 px-3 py-2 text-xs font-medium text-red-700 dark:text-red-300">
               <AlertTriangle size={14} /> At this pace you'd run out around{' '}
