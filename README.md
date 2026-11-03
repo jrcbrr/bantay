@@ -81,7 +81,7 @@ Every push to `main` runs CI (typecheck, lint, tests, build) and deploys to GitH
 
 ## Made by
 
-**John Rudolph**
+**John Rudolph Cabrera**
 
 - Email: [johnrudolph2010@gmail.com](mailto:johnrudolph2010@gmail.com)
 - Instagram: [@jrcbrr_](https://instagram.com/jrcbrr_)
