@@ -80,12 +80,12 @@ export function Shell() {
         </NavLink>
       </aside>
 
-      <main className="mx-auto max-w-2xl px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-32 md:ml-72 md:max-w-3xl md:pt-8 md:pb-12">
+      <main className="mx-auto max-w-2xl px-3 sm:px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-32 md:ml-72 md:max-w-3xl md:pt-8 md:pb-12">
         <Outlet />
       </main>
 
       {/* Mobile floating tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 px-3 sm:px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
         <div className="glass mx-auto flex max-w-md items-center justify-between rounded-[2rem] px-2 py-2">
           {tabs.slice(0, 2).map((t) => (
             <TabLink key={t.to} {...t} />
@@ -93,7 +93,7 @@ export function Shell() {
           <button
             onClick={() => openAdd()}
             aria-label="Add transaction"
-            className="bg-accent -my-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-xl shadow-accent/40 transition active:scale-95"
+            className="bg-accent -my-6 mx-1 flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-white shadow-xl shadow-accent/40 transition active:scale-95"
           >
             <Plus size={26} strokeWidth={2.5} />
           </button>
@@ -116,12 +116,12 @@ function TabLink({ to, label, icon: Icon }: Tab) {
       to={to}
       end={to === '/'}
       className={({ isActive }) =>
-        `flex w-16 flex-col items-center gap-0.5 rounded-2xl py-1.5 text-[11px] font-medium transition-colors ${
+        `flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl py-1.5 text-[0.7rem] font-medium transition-colors ${
           isActive ? 'text-accent dark:text-accent-soft' : 'text-ink/45 dark:text-white/45'
         }`
       }
     >
-      <Icon size={22} strokeWidth={2} />
+      <Icon className="h-[1.35rem] w-[1.35rem]" strokeWidth={2} />
       {label}
     </NavLink>
   )

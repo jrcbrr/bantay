@@ -42,7 +42,7 @@ export function WealthPage() {
   const [debtTarget, setDebtTarget] = useState<DebtTarget>(null)
   const [instTarget, setInstTarget] = useState<InstallmentTarget>(null)
   const [showSettled, setShowSettled] = useState(false)
-  const iou = debtTotals(debts, transactions)
+  const iou = debtTotals(debts)
   const openDebts = debts.filter((d) => !d.settled)
   const settledDebts = debts.filter((d) => d.settled)
   const [accountTarget, setAccountTarget] = useState<AccountSheetTarget>(null)
@@ -82,7 +82,7 @@ export function WealthPage() {
 
       <GlassCard>
         <p className="text-sm text-ink/55 dark:text-white/55">Net worth</p>
-        <Amount value={worth} className="mt-1 block text-4xl font-semibold tracking-tight" />
+        <Amount value={worth} className="mt-1 block text-3xl font-semibold tracking-tight sm:text-4xl" />
         {positive > 0 && (
           <div className="mt-4 flex h-2.5 gap-0.5 overflow-hidden rounded-full">
             {breakdown.map(([name, v, color]) =>
@@ -222,7 +222,7 @@ export function WealthPage() {
           </div>
           <ul>
             {[...openDebts, ...(showSettled ? settledDebts : [])].map((d) => {
-              const st = debtStatus(d, transactions)
+              const st = debtStatus(d)
               const lent = d.direction === 'owed_to_me'
               return (
                 <li key={d.id}>

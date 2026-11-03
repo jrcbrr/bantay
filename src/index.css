@@ -15,6 +15,26 @@
   html {
     color-scheme: light;
     -webkit-tap-highlight-color: transparent;
+    /* Don't let phones inflate text on their own. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-size: 16px;
+  }
+  /* Everything is sized in rem, so stepping the base down scales the whole UI on narrow phones. */
+  @media (max-width: 400px) {
+    html {
+      font-size: 15px;
+    }
+  }
+  @media (max-width: 370px) {
+    html {
+      font-size: 14px;
+    }
+  }
+  @media (max-width: 330px) {
+    html {
+      font-size: 13px;
+    }
   }
   html.dark {
     color-scheme: dark;

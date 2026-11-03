@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { currentCycle } from './allowance.ts'
-import { chargeDate, debtStatus, debtTotals, debtTxType, installmentStatus, monthlyCharge, nextCardDue } from './credit.ts'
+import { chargeDate, debtStatus, debtTotals, installmentStatus, monthlyCharge, nextCardDue, paymentsFromLegacy } from './credit.ts'
 import type { Debt, Installment, Transaction } from './types.ts'
 
 describe('baon skip days', () => {
@@ -67,25 +67,32 @@ describe('installments', () => {
 })
 
 describe('debts', () => {
-  const lent: Debt = { id: 'd1', person: 'Mark', direction: 'owed_to_me', principal: 50000, createdAt: 0 }
+  const lent: Debt = {
+    id: 'd1',
+    person: 'Mark',
+    direction: 'owed_to_me',
+    principal: 50000,
+    payments: [{ id: 'p1', amount: 20000, date: '2026-11-03' }],
+    createdAt: 0,
+  }
   const borrowed: Debt = { id: 'd2', person: 'Ate', direction: 'i_owe', principal: 20000, createdAt: 0 }
-  const txs = [
-    tx({ debtId: 'd1', debtRole: 'principal', amount: 50000 }),
-    tx({ debtId: 'd1', debtRole: 'payment', amount: 20000, type: 'income' }),
-  ]
 
-  it('counts only repayments', () => {
-    expect(debtStatus(lent, txs)).toEqual({ repaid: 20000, remaining: 30000, ratio: 0.4 })
+  it('counts paybacks recorded on the debt', () => {
+    expect(debtStatus(lent)).toEqual({ repaid: 20000, remaining: 30000, ratio: 0.4 })
+    expect(debtStatus(borrowed)).toEqual({ repaid: 0, remaining: 20000, ratio: 0 })
   })
 
   it('totals open debts each way', () => {
-    expect(debtTotals([lent, borrowed, { ...borrowed, id: 'x', settled: true }], txs)).toEqual({ iOwe: 20000, owedToMe: 30000 })
+    expect(debtTotals([lent, borrowed, { ...borrowed, id: 'x', settled: true }])).toEqual({ iOwe: 20000, owedToMe: 30000 })
   })
 
-  it('money direction', () => {
-    expect(debtTxType('i_owe', 'principal')).toBe('income')
-    expect(debtTxType('i_owe', 'payment')).toBe('expense')
-    expect(debtTxType('owed_to_me', 'principal')).toBe('expense')
-    expect(debtTxType('owed_to_me', 'payment')).toBe('income')
+  it('moves old debt transactions into payments, without duplicates', () => {
+    const txs = [
+      tx({ id: 'a', debtId: 'd2', debtRole: 'principal', amount: 20000 }),
+      tx({ id: 'b', debtId: 'd2', debtRole: 'payment', amount: 5000, date: '2027-02-01' }),
+      tx({ id: 'c', debtId: 'other', debtRole: 'payment', amount: 999 }),
+    ]
+    expect(paymentsFromLegacy(borrowed, txs)).toEqual([{ id: 'b', amount: 5000, date: '2027-02-01' }])
+    expect(paymentsFromLegacy({ ...borrowed, payments: [{ id: 'b', amount: 5000, date: '2027-02-01' }] }, txs)).toHaveLength(1)
   })
 })

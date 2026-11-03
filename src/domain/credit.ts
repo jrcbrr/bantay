@@ -1,5 +1,5 @@
 import { fromISODate, toISODate } from './dates.ts'
-import type { Centavos, Debt, ID, ISODate, Installment, Transaction } from './types.ts'
+import type { Centavos, Debt, DebtPayment, ISODate, Installment, Transaction } from './types.ts'
 
 /* ---------------- Installments ---------------- */
 
@@ -53,6 +53,7 @@ export function nextCardDue(dueDay: number, now: Date): ISODate {
 }
 
 /* ---------------- Debts ---------------- */
+// Debts are tracking only: they never change account balances or net worth.
 
 export interface DebtStatus {
   repaid: Centavos
@@ -60,19 +61,19 @@ export interface DebtStatus {
   ratio: number
 }
 
-export function debtStatus(debt: Debt, txs: readonly Transaction[]): DebtStatus {
-  const repaid = txs.filter((t) => t.debtId === debt.id && t.debtRole === 'payment').reduce((s, t) => s + t.amount, 0)
+export function debtStatus(debt: Debt): DebtStatus {
+  const repaid = (debt.payments ?? []).reduce((s, p) => s + p.amount, 0)
   const remaining = Math.max(0, debt.principal - repaid)
   return { repaid, remaining, ratio: debt.principal > 0 ? Math.min(1, repaid / debt.principal) : 1 }
 }
 
 /** Totals across open debts. */
-export function debtTotals(debts: readonly Debt[], txs: readonly Transaction[]): { iOwe: Centavos; owedToMe: Centavos } {
+export function debtTotals(debts: readonly Debt[]): { iOwe: Centavos; owedToMe: Centavos } {
   let iOwe = 0
   let owedToMe = 0
   for (const d of debts) {
     if (d.settled) continue
-    const r = debtStatus(d, txs).remaining
+    const r = debtStatus(d).remaining
     if (d.direction === 'i_owe') iOwe += r
     else owedToMe += r
   }
@@ -80,13 +81,14 @@ export function debtTotals(debts: readonly Debt[], txs: readonly Transaction[]):
 }
 
 /**
- * Which way money moves for a debt transaction.
- * Borrowing or getting paid back brings money in; lending or repaying sends it out.
+ * Older versions logged debts as account transactions. Turn their repayments into
+ * debt payments, so those transactions can be removed and balances go back to normal.
  */
-export function debtTxType(direction: Debt['direction'], role: 'principal' | 'payment'): 'income' | 'expense' {
-  if (direction === 'i_owe') return role === 'principal' ? 'income' : 'expense'
-  return role === 'principal' ? 'expense' : 'income'
+export function paymentsFromLegacy(debt: Debt, txs: readonly Transaction[]): DebtPayment[] {
+  const legacy = txs
+    .filter((t) => t.debtId === debt.id && t.debtRole === 'payment')
+    .map((t) => ({ id: t.id, amount: t.amount, date: t.date }))
+  const existing = debt.payments ?? []
+  const known = new Set(existing.map((p) => p.id))
+  return [...existing, ...legacy.filter((p) => !known.has(p.id))].sort((a, b) => a.date.localeCompare(b.date))
 }
-
-export const debtCategory = (direction: Debt['direction'], role: 'principal' | 'payment'): ID =>
-  ({ i_owe: { principal: 'borrowed', payment: 'debt-repay' }, owed_to_me: { principal: 'lent', payment: 'debt-collect' } })[direction][role]

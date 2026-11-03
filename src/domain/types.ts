@@ -186,7 +186,15 @@ export interface Debt {
   note?: string
   dueDate?: ISODate
   settled?: boolean
+  /** Paybacks so far. Debts are tracking only: they never move money in your accounts. */
+  payments?: DebtPayment[]
   createdAt: number
+}
+
+export interface DebtPayment {
+  id: ID
+  amount: Centavos
+  date: ISODate
 }
 
 /** `days` = baon on specific weekdays only (e.g. school days Mon–Fri). */

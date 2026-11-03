@@ -42,7 +42,7 @@ function BalanceCard({ money }: CardProps) {
   return (
     <GlassCard>
       <p className={`text-sm ${muted}`}>Spendable money</p>
-      <Amount value={available} className="mt-1 block text-4xl font-semibold tracking-tight" />
+      <Amount value={available} className="mt-1 block text-3xl font-semibold tracking-tight sm:text-4xl" />
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {accounts
           .filter((a) => a.kind !== 'credit')
@@ -97,7 +97,7 @@ function SafeCard({ money }: CardProps) {
           </button>
         )}
       </div>
-      <Amount value={safeToday} className="mt-1 block text-3xl font-semibold tracking-tight" />
+      <Amount value={safeToday} className="mt-1 block text-2xl font-semibold tracking-tight sm:text-3xl" />
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/80">
         <span>
           Spent today: <Amount value={spentToday} />
@@ -121,7 +121,9 @@ function ForecastCard({ money }: CardProps) {
   const baon = averageBaon(transactions, now, days)
   const points = forecast({ startBalance: available, today: now, days: 30, dailySpend: pace, baonPerDay: baon, baonDays: days, recurring })
   const end = points[points.length - 1]!
-  const shortfall = firstShortfall(points)
+  // Already below zero today is its own message; otherwise look for the first future day under zero.
+  const belowNow = available < 0
+  const shortfall = belowNow ? undefined : firstShortfall(points.slice(1))
 
   return (
     <GlassCard>
@@ -147,6 +149,11 @@ function ForecastCard({ money }: CardProps) {
             </p>
           </div>
           <ForecastChart points={points} />
+          {belowNow && (
+            <p className="mt-2 flex items-center gap-1.5 rounded-xl bg-red-500/10 px-3 py-2 text-xs font-medium text-red-700 dark:text-red-300">
+              <AlertTriangle size={14} /> Your spendable money is below zero right now
+            </p>
+          )}
           {shortfall && (
             <p className="mt-2 flex items-center gap-1.5 rounded-xl bg-red-500/10 px-3 py-2 text-xs font-medium text-red-700 dark:text-red-300">
               <AlertTriangle size={14} /> At this pace you'd run out around{' '}
@@ -354,7 +361,7 @@ function NetWorthCard({ money }: CardProps) {
   return (
     <GlassCard>
       <CardHeader title="Net worth" to="/wealth" linkText="Wealth" />
-      <Amount value={worth} className="block text-3xl font-semibold tracking-tight" />
+      <Amount value={worth} className="block text-2xl font-semibold tracking-tight sm:text-3xl" />
       <p className={`mt-2 text-xs ${muted}`}>
         Includes <Amount value={assetsValue} /> in {assets.length} asset{assets.length === 1 ? '' : 's'}
         {owed > 0 && (

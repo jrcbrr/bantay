@@ -1,8 +1,8 @@
 import { toISODate, today } from '@/domain/dates.ts'
 import { advance } from '@/domain/recurring.ts'
 import { planArchive } from '@/domain/archive.ts'
-import { debtCategory, debtStatus, debtTxType, installmentStatus } from '@/domain/credit.ts'
-import type { Centavos, Debt, ID, ISODate, Installment, Recurring } from '@/domain/types.ts'
+import { debtStatus, installmentStatus } from '@/domain/credit.ts'
+import type { Centavos, Debt, ISODate, Installment, Recurring } from '@/domain/types.ts'
 import { db, newId } from './db.ts'
 
 /**
@@ -43,6 +43,7 @@ export async function skipOnce(r: Recurring): Promise<void> {
 }
 
 /* ---------------- Debts & IOUs ---------------- */
+// Tracking only: debts never move money in your accounts or change your net worth.
 
 export interface NewDebt {
   person: string
@@ -50,69 +51,29 @@ export interface NewDebt {
   principal: Centavos
   note?: string
   dueDate?: ISODate
-  /** Record the money moving now (lent from / borrowed into this account). */
-  accountId?: ID
 }
-
-const debtNote = (direction: Debt['direction'], role: 'principal' | 'payment', person: string) =>
-  direction === 'i_owe'
-    ? role === 'principal'
-      ? `Borrowed from ${person}`
-      : `Paid back ${person}`
-    : role === 'principal'
-      ? `Lent to ${person}`
-      : `${person} paid me back`
 
 export async function createDebt(d: NewDebt): Promise<void> {
-  const id = newId()
-  await db.transaction('rw', db.debts, db.transactions, async () => {
-    await db.debts.add({
-      id,
-      person: d.person,
-      direction: d.direction,
-      principal: d.principal,
-      note: d.note,
-      dueDate: d.dueDate,
-      createdAt: Date.now(),
-    })
-    if (d.accountId) {
-      await db.transactions.add({
-        id: newId(),
-        type: debtTxType(d.direction, 'principal'),
-        amount: d.principal,
-        accountId: d.accountId,
-        categoryId: debtCategory(d.direction, 'principal'),
-        note: debtNote(d.direction, 'principal', d.person),
-        date: toISODate(today()),
-        debtId: id,
-        debtRole: 'principal',
-        createdAt: Date.now(),
-      })
-    }
-  })
+  await db.debts.add({ id: newId(), ...d, payments: [], createdAt: Date.now() })
 }
 
-/** Log a repayment (either way) and settle the debt once it's fully paid. */
-export async function recordDebtPayment(debt: Debt, amount: Centavos, accountId: ID): Promise<void> {
-  await db.transaction('rw', db.debts, db.transactions, async () => {
-    await db.transactions.add({
-      id: newId(),
-      type: debtTxType(debt.direction, 'payment'),
-      amount,
-      accountId,
-      categoryId: debtCategory(debt.direction, 'payment'),
-      note: debtNote(debt.direction, 'payment', debt.person),
-      date: toISODate(today()),
-      debtId: debt.id,
-      debtRole: 'payment',
-      createdAt: Date.now(),
-    })
-    const txs = await db.transactions.where('debtId').equals(debt.id).toArray()
-    if (debtStatus(debt, txs).remaining === 0) await db.debts.update(debt.id, { settled: true })
-  })
+/** Record a payback (either way). Settles the debt once it's fully paid. Returns an undo. */
+export async function recordDebtPayment(debt: Debt, amount: Centavos): Promise<() => Promise<void>> {
+  const payment = { id: newId(), amount, date: toISODate(today()) }
+  const payments = [...(debt.payments ?? []), payment]
+  const settled = debtStatus({ ...debt, payments }).remaining === 0
+  await db.debts.update(debt.id, { payments, settled: settled || debt.settled })
+  return async () => {
+    await db.debts.update(debt.id, { payments: debt.payments ?? [], settled: debt.settled })
+  }
 }
 
-/** Delete a debt and the transactions it created, so balances go back to how they were. */
+export async function removeDebtPayment(debt: Debt, paymentId: string): Promise<void> {
+  const payments = (debt.payments ?? []).filter((p) => p.id !== paymentId)
+  await db.debts.update(debt.id, { payments, settled: debtStatus({ ...debt, payments }).remaining === 0 && debt.settled })
+}
+
+/** Delete a debt (and any account transactions older versions created for it). */
 export async function deleteDebt(debt: Debt): Promise<void> {
   await db.transaction('rw', db.debts, db.transactions, async () => {
     await db.transactions.where('debtId').equals(debt.id).delete()

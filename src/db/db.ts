@@ -17,6 +17,7 @@ import type {
 import type { Challenge, EventBudget } from '@/domain/planExtras.ts'
 import type { YearArchive } from '@/domain/archive.ts'
 import { starterRules, type CategoryRule } from '@/domain/rules.ts'
+import { paymentsFromLegacy } from '@/domain/credit.ts'
 import { debtCategoryIds, defaultAccountLooks, defaultCategories, defaultDashboard, seed } from './seed.ts'
 
 export class BantayDB extends Dexie {
@@ -128,12 +129,28 @@ export class BantayDB extends Dexie {
       .upgrade(async (tx) => {
         await addStarterRules(tx.table('rules'))
       })
+    // v8: debts become tracking-only. Old debt transactions turn into payments on the debt
+    // and are removed, so they no longer change account balances.
+    this.version(8)
+      .stores({})
+      .upgrade(async (tx) => {
+        const txTable = tx.table<Transaction, string>('transactions')
+        const debtTxs = await txTable.filter((t) => !!t.debtId).toArray()
+        if (debtTxs.length === 0) return
+        await tx
+          .table<Debt, string>('debts')
+          .toCollection()
+          .modify((d: Debt) => {
+            d.payments = paymentsFromLegacy(d, debtTxs)
+          })
+        await txTable.bulkDelete(debtTxs.map((t) => t.id))
+      })
     this.on('populate', (tx) => seed(tx))
   }
 }
 
 /** Add the starter keyword rules (only ones not already there). */
-export async function addStarterRules(table: Table<CategoryRule, string>): Promise<void> {
+export async function addStarterRules(table: Table<CategoryRule, string> | EntityTable<CategoryRule, 'id'>): Promise<void> {
   const existing = new Set((await table.toArray()).map((r) => r.keyword))
   const now = Date.now()
   await table.bulkAdd(
