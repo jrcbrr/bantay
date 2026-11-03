@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Check, ChevronRight, Tags, Wand2, Zap } from 'lucide-react'
 import { ACCENTS } from '@/app/useTheme.ts'
+import { AboutCard } from './AboutCard.tsx'
 import { ArchiveCard } from './ArchiveCard.tsx'
 import { BackupCard } from './BackupCard.tsx'
 import { PinCard } from './PinCard.tsx'
@@ -160,6 +161,8 @@ export function SettingsPage() {
         </GlassCard>
 
         <ArchiveCard />
+
+        <AboutCard />
 
         <p className="text-center text-xs text-ink/40 dark:text-white/40">
           Bantay works offline. Your data stays on this device and is never uploaded anywhere.

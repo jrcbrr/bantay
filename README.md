@@ -78,3 +78,10 @@ npm run build
 ```
 
 Every push to `main` runs CI (typecheck, lint, tests, build) and deploys to GitHub Pages.
+
+## Made by
+
+**John Rudolph**
+
+- Email: [johnrudolph2010@gmail.com](mailto:johnrudolph2010@gmail.com)
+- Instagram: [@jrcbrr_](https://instagram.com/jrcbrr_)
