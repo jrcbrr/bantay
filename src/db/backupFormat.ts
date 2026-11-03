@@ -26,42 +26,38 @@ export type BackupTable = (typeof BACKUP_TABLES)[number]
 const row = z.object({ id: z.string().min(1) }).passthrough()
 const money = z.number().int()
 
-// Key tables get real checks so a corrupted file can't sneak bad money values in.
-const tableSchemas: Record<BackupTable, z.ZodTypeAny> = {
-  settings: z.array(row),
-  accounts: z.array(row.extend({ name: z.string(), kind: z.enum(['cash', 'bank', 'ewallet', 'credit']), openingBalance: money })),
-  categories: z.array(row.extend({ name: z.string(), kind: z.enum(['expense', 'income']) })),
-  templates: z.array(row),
-  transactions: z.array(
-    row.extend({
-      type: z.enum(['expense', 'income', 'transfer']),
-      amount: money.nonnegative(),
-      accountId: z.string(),
-      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    }),
-  ),
-  budgets: z.array(row),
-  goals: z.array(row),
-  recurring: z.array(row),
-  installments: z.array(row),
-  debts: z.array(row),
-  assets: z.array(row),
-  receipts: z.array(row),
-  events: z.array(row),
-  challenges: z.array(row),
-  wishlist: z.array(row),
-  rules: z.array(row),
-  archives: z.array(row),
+// Key tables get real checks so a corrupted entry can't sneak bad money values in.
+// Each row is checked on its own: a damaged row is skipped instead of failing the whole restore.
+const rowSchemas: Record<BackupTable, z.ZodTypeAny> = {
+  settings: row,
+  accounts: row.extend({ name: z.string(), kind: z.enum(['cash', 'bank', 'ewallet', 'credit']), openingBalance: money }),
+  categories: row.extend({ name: z.string(), kind: z.enum(['expense', 'income']) }),
+  templates: row,
+  transactions: row.extend({
+    type: z.enum(['expense', 'income', 'transfer']),
+    amount: money.nonnegative(),
+    accountId: z.string(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  }),
+  budgets: row,
+  goals: row,
+  recurring: row,
+  installments: row,
+  debts: row,
+  assets: row,
+  receipts: row,
+  events: row,
+  challenges: row,
+  wishlist: row,
+  rules: row,
+  archives: row,
 }
 
-const dataShape = {} as Record<BackupTable, z.ZodTypeAny>
-for (const t of BACKUP_TABLES) dataShape[t] = tableSchemas[t].optional().default([])
-
-const backupSchema = z.object({
+const headerSchema = z.object({
   app: z.literal('bantay'),
-  format: z.literal(1),
-  exportedAt: z.string(),
-  data: z.object(dataShape),
+  format: z.coerce.number().refine((n) => n === 1),
+  exportedAt: z.string().optional(),
+  data: z.record(z.unknown()),
 })
 
 export interface BackupFile {
@@ -71,27 +67,52 @@ export interface BackupFile {
   data: Record<BackupTable, { id: string; [k: string]: unknown }[]>
 }
 
-export type ParseResult = { ok: true; backup: BackupFile; counts: Record<BackupTable, number> } | { ok: false; error: string }
+export type ParseResult =
+  | { ok: true; backup: BackupFile; counts: Record<BackupTable, number>; skipped: number }
+  | { ok: false; error: string }
 
-/** Check a backup file before anything is touched. Never throws. */
+/**
+ * Check a backup file before anything is touched. Never throws.
+ * Forgiving on purpose: ignores a byte-order mark or stray text around the JSON
+ * (some phones add it when saving), and skips individual damaged rows.
+ */
 export function parseBackup(text: string): ParseResult {
+  const cleaned = text.replace(/^\uFEFF/, '').trim()
+  const start = cleaned.indexOf('{')
+  const end = cleaned.lastIndexOf('}')
+  if (start < 0 || end < start) return { ok: false, error: "That file isn't a Bantay backup. Pick the file named bantay-backup-….json." }
+
   let json: unknown
   try {
-    json = JSON.parse(text)
+    json = JSON.parse(cleaned.slice(start, end + 1))
   } catch {
-    return { ok: false, error: "That file isn't a Bantay backup (not valid JSON)." }
+    return { ok: false, error: 'That backup file is incomplete or damaged (it may not have finished downloading).' }
   }
-  const result = backupSchema.safeParse(json)
-  if (!result.success) {
-    const issue = result.error.issues[0]
-    const where = issue?.path.join('.') ?? ''
-    if (where === 'app' || where === 'format')
-      return { ok: false, error: "That file isn't a Bantay backup, or it's from a newer version of the app." }
-    return { ok: false, error: `The backup looks damaged (${where || 'file'}: ${issue?.message ?? 'invalid'}).` }
+
+  const head = headerSchema.safeParse(json)
+  if (!head.success) return { ok: false, error: "That file isn't a Bantay backup, or it's from a newer version of the app." }
+
+  const data = {} as BackupFile['data']
+  let skipped = 0
+  let total = 0
+  for (const t of BACKUP_TABLES) {
+    const raw = head.data.data[t]
+    const rows: BackupFile['data'][BackupTable] = []
+    if (Array.isArray(raw)) {
+      for (const item of raw) {
+        const r = rowSchemas[t].safeParse(item)
+        if (r.success) rows.push(r.data as BackupFile['data'][BackupTable][number])
+        else skipped++
+      }
+    }
+    data[t] = rows
+    total += rows.length
   }
-  const backup = result.data as BackupFile
-  const counts = Object.fromEntries(BACKUP_TABLES.map((t) => [t, backup.data[t].length])) as Record<BackupTable, number>
-  return { ok: true, backup, counts }
+  if (total === 0) return { ok: false, error: 'That backup is empty, so there is nothing to restore.' }
+
+  const backup: BackupFile = { app: 'bantay', format: 1, exportedAt: head.data.exportedAt ?? '', data }
+  const counts = Object.fromEntries(BACKUP_TABLES.map((t) => [t, data[t].length])) as Record<BackupTable, number>
+  return { ok: true, backup, counts, skipped }
 }
 
 /** Escape a value for CSV (RFC 4180). */

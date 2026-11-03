@@ -9,7 +9,7 @@ import { dashboardCards } from './cards.tsx'
 import { CustomizeSheet } from './CustomizeSheet.tsx'
 
 const dayFmt = new Intl.DateTimeFormat('en-PH', { weekday: 'long', month: 'short', day: 'numeric' })
-const iconBtn = 'glass flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95'
+const iconBtn = 'glass flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 sm:h-10 sm:w-10'
 
 export function HomePage() {
   const money = useMoney()
@@ -23,10 +23,10 @@ export function HomePage() {
       <header className="flex items-center justify-between gap-3 pt-2 pb-1">
         <div className="min-w-0">
           <p className="text-sm text-ink/50 dark:text-white/50">{dayFmt.format(new Date())}</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Bantay</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Bantay</h1>
         </div>
-        <div className="flex gap-2">
-          <PrivacyToggle />
+        <div className="flex gap-1.5 sm:gap-2">
+          <PrivacyToggle className="h-9! w-9! sm:h-10! sm:w-10!" />
           <Link to="/insights" aria-label="Insights" className={`${iconBtn} md:hidden`}>
             <BarChart3 size={18} />
           </Link>

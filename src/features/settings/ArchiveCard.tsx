@@ -20,8 +20,8 @@ export function ArchiveCard() {
   const years = [...new Set(old.map((t) => t.date.slice(0, 4)))].sort()
 
   const backup = async () => {
-    await downloadBackup()
-    setStep('backed-up')
+    // Only continue if the backup was actually saved (not cancelled).
+    if (await downloadBackup()) setStep('backed-up')
   }
 
   const run = async () => {

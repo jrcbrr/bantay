@@ -26,10 +26,28 @@ describe('parseBackup', () => {
     expect(parseBackup(JSON.stringify({ ...valid, app: 'other' })).ok).toBe(false)
   })
 
-  it('rejects bad money values', () => {
+  it('skips a damaged row instead of failing the whole restore', () => {
     const bad = structuredClone(valid)
-    bad.data.transactions[0]!.amount = 189.5
-    expect(parseBackup(JSON.stringify(bad)).ok).toBe(false)
+    bad.data.transactions.push({ ...bad.data.transactions[0]!, id: 't2', amount: 189.5 })
+    const r = parseBackup(JSON.stringify(bad))
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.counts.transactions).toBe(1)
+    expect(r.skipped).toBe(1)
+  })
+
+  it('tolerates a byte-order mark and stray text around the JSON', () => {
+    expect(parseBackup(`\uFEFF  ${JSON.stringify(valid)}\n`).ok).toBe(true)
+    expect(parseBackup(`saved:${JSON.stringify(valid)}EOF`).ok).toBe(true)
+  })
+
+  it('accepts format written as a string', () => {
+    expect(parseBackup(JSON.stringify({ ...valid, format: '1' })).ok).toBe(true)
+  })
+
+  it('rejects a cut-off download and an empty backup', () => {
+    expect(parseBackup(JSON.stringify(valid).slice(0, 80)).ok).toBe(false)
+    expect(parseBackup(JSON.stringify({ ...valid, data: {} })).ok).toBe(false)
   })
 })
 

@@ -1,0 +1,35 @@
+name: Screenshots
+
+# Phone-sized screenshots of the app for checking layouts, pushed to the `screenshots` branch.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: |
+          npx vite preview --port 4173 &
+          sleep 3
+          node scripts/screenshots.mjs http://localhost:4173/bantay/ shots
+      - name: Push screenshots
+        run: |
+          cd shots
+          git init -q -b screenshots
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -qm "Screenshots for ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" screenshots

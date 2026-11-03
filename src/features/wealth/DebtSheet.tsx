@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
-import { Check, Trash2 } from 'lucide-react'
+import { Check, Trash2, X } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { createDebt, deleteDebt, recordDebtPayment } from '@/db/actions.ts'
+import { showToast } from '@/app/toast.ts'
+import { createDebt, deleteDebt, recordDebtPayment, removeDebtPayment } from '@/db/actions.ts'
 import { db } from '@/db/db.ts'
-import { useAccounts, useTransactions } from '@/db/hooks.ts'
 import { debtStatus } from '@/domain/credit.ts'
+import { fromISODate } from '@/domain/dates.ts'
 import { parseAmount } from '@/domain/money.ts'
 import type { Debt, DebtDirection } from '@/domain/types.ts'
-import { AccountIcon } from '@/ui/AccountIcon.tsx'
 import { Amount } from '@/ui/Amount.tsx'
-import { AmountInput, Chips, DangerButton, Field, PrimaryButton, ProgressBar, Segmented, TextInput } from '@/ui/form.tsx'
+import { AmountInput, DangerButton, Field, PrimaryButton, ProgressBar, Segmented, TextInput } from '@/ui/form.tsx'
 import { Sheet } from '@/ui/Sheet.tsx'
 
 export type DebtTarget = Debt | 'new' | null
+
+const dayFmt = new Intl.DateTimeFormat('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
 
 export function DebtSheet({ target, onClose }: { target: DebtTarget; onClose: () => void }) {
   const existing = target && target !== 'new' ? target : null
@@ -24,11 +26,9 @@ export function DebtSheet({ target, onClose }: { target: DebtTarget; onClose: ()
 }
 
 function NewDebtForm({ onClose }: { onClose: () => void }) {
-  const accounts = useAccounts().filter((a) => a.kind !== 'credit')
   const [direction, setDirection] = useState<DebtDirection>('owed_to_me')
   const [person, setPerson] = useState('')
   const [amountText, setAmountText] = useState('')
-  const [accountId, setAccountId] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [note, setNote] = useState('')
 
@@ -43,7 +43,6 @@ function NewDebtForm({ onClose }: { onClose: () => void }) {
       principal: amount,
       note: note.trim() || undefined,
       dueDate: dueDate || undefined,
-      accountId: accountId || undefined,
     })
     onClose()
   }
@@ -62,21 +61,8 @@ function NewDebtForm({ onClose }: { onClose: () => void }) {
       <Field label={lent ? 'Who borrowed' : 'Who you borrowed from'}>
         <TextInput value={person} onChange={(e) => setPerson(e.target.value)} placeholder="Name" autoFocus />
       </Field>
-      <Field label="Amount">
+      <Field label="Amount" hint="Just for keeping track. It won't change your balances or net worth.">
         <AmountInput value={amountText} onChange={setAmountText} />
-      </Field>
-      <Field
-        label={lent ? 'Money came out of' : 'Money went into'}
-        hint={accountId ? 'This moves the money in your account now.' : "Just tracking it. Your balances won't change."}
-      >
-        <Chips
-          items={[
-            ['', 'Just track it'] as const,
-            ...accounts.map((a) => [a.id, a.name, <AccountIcon key={a.id} account={a} size={20} />] as const),
-          ]}
-          value={accountId}
-          onChange={setAccountId}
-        />
       </Field>
       <Field label="Pay back by (optional)">
         <TextInput type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
@@ -94,15 +80,12 @@ function NewDebtForm({ onClose }: { onClose: () => void }) {
 }
 
 function DebtDetail({ debt: initial, onClose }: { debt: Debt; onClose: () => void }) {
-  // Follow live changes (settling, reopening) instead of the snapshot that was tapped.
+  // Follow live changes (payments, settling) instead of the snapshot that was tapped.
   const debt = useLiveQuery(() => db.debts.get(initial.id), [initial.id]) ?? initial
-  const accounts = useAccounts().filter((a) => a.kind !== 'credit')
-  const transactions = useTransactions()
-  const status = debtStatus(debt, transactions)
-  const linked = transactions.filter((t) => t.debtId === debt.id).length
+  const status = debtStatus(debt)
+  const payments = debt.payments ?? []
 
   const [payText, setPayText] = useState('')
-  const [accountId, setAccountId] = useState('')
   const [armed, setArmed] = useState(false)
 
   useEffect(() => {
@@ -112,16 +95,13 @@ function DebtDetail({ debt: initial, onClose }: { debt: Debt; onClose: () => voi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debt.id])
 
-  useEffect(() => {
-    if (!accountId && accounts[0]) setAccountId(accounts[0].id)
-  }, [accounts, accountId])
-
   const pay = parseAmount(payText)
   const lent = debt.direction === 'owed_to_me'
 
   const record = async () => {
-    if (pay === null || !accountId) return
-    await recordDebtPayment(debt, Math.min(pay, status.remaining || pay), accountId)
+    if (pay === null) return
+    const undo = await recordDebtPayment(debt, Math.min(pay, status.remaining || pay))
+    showToast('Payment recorded', undo)
     setPayText('')
   }
 
@@ -157,13 +137,8 @@ function DebtDetail({ debt: initial, onClose }: { debt: Debt; onClose: () => voi
           <Field label={lent ? 'They paid me back' : 'I paid them back'}>
             <AmountInput value={payText} onChange={setPayText} />
           </Field>
-          <Chips
-            items={accounts.map((a) => [a.id, a.name, <AccountIcon key={a.id} account={a} size={20} />] as const)}
-            value={accountId}
-            onChange={setAccountId}
-          />
           <div className="flex gap-2">
-            <PrimaryButton disabled={pay === null || !accountId} onClick={() => void record()}>
+            <PrimaryButton disabled={pay === null} onClick={() => void record()}>
               Record payment
             </PrimaryButton>
           </div>
@@ -171,18 +146,34 @@ function DebtDetail({ debt: initial, onClose }: { debt: Debt; onClose: () => voi
             onClick={() => void db.debts.update(debt.id, { settled: true })}
             className="w-full text-center text-xs font-medium text-ink/55 dark:text-white/55"
           >
-            Mark as settled without logging money
+            Mark as settled
           </button>
         </div>
       )}
 
-      <DangerButton
-        armed={armed}
-        onClick={() => void remove()}
-        icon={<Trash2 size={18} />}
-        armedLabel={linked ? `Delete it and its ${linked} transaction${linked === 1 ? '' : 's'}` : 'Tap to delete'}
-        srLabel="Delete debt"
-      />
+      {payments.length > 0 && (
+        <Field label="Paybacks">
+          <ul className="space-y-1">
+            {payments.map((p) => (
+              <li key={p.id} className="flex items-center gap-2 text-sm">
+                <span className="flex-1 text-ink/60 dark:text-white/60">{dayFmt.format(fromISODate(p.date))}</span>
+                <Amount value={p.amount} className="font-medium" />
+                <button
+                  aria-label="Remove this payment"
+                  onClick={() => void removeDebtPayment(debt, p.id)}
+                  className="rounded-full p-1.5 text-ink/35 hover:text-red-500 dark:text-white/35"
+                >
+                  <X size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Field>
+      )}
+
+      <p className="text-xs text-ink/45 dark:text-white/45">Debts are for keeping track only. They don't change your balances or net worth.</p>
+
+      <DangerButton armed={armed} onClick={() => void remove()} icon={<Trash2 size={18} />} armedLabel="Tap to delete" srLabel="Delete debt" />
     </div>
   )
 }
