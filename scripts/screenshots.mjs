@@ -35,7 +35,7 @@ for (const phone of phones) {
         await page.getByRole('button', { name: 'Add transaction' }).last().click()
         if (chip === 'Baon') await page.getByRole('button', { name: 'Income', exact: true }).click()
         await page.getByPlaceholder('0', { exact: true }).fill(amount)
-        await page.getByRole('button', { name: chip, exact: true }).click()
+        await page.getByRole('button', { name: chip, exact: true }).last().click()
         await page.getByRole('button', { name: 'Save', exact: true }).click()
         await page.waitForTimeout(400)
       }
