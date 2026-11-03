@@ -150,7 +150,7 @@ export class BantayDB extends Dexie {
 }
 
 /** Add the starter keyword rules (only ones not already there). */
-export async function addStarterRules(table: Table<CategoryRule, string>): Promise<void> {
+export async function addStarterRules(table: Table<CategoryRule, string> | EntityTable<CategoryRule, 'id'>): Promise<void> {
   const existing = new Set((await table.toArray()).map((r) => r.keyword))
   const now = Date.now()
   await table.bulkAdd(
