@@ -4,6 +4,7 @@ import { BarChart3, Settings, SlidersHorizontal } from 'lucide-react'
 import { useMoney } from '@/db/hooks.ts'
 import { defaultDashboard } from '@/db/seed.ts'
 import { PrivacyToggle } from '@/ui/PrivacyToggle.tsx'
+import { Credits } from './Credits.tsx'
 import { dashboardCards } from './cards.tsx'
 import { CustomizeSheet } from './CustomizeSheet.tsx'
 
@@ -18,6 +19,7 @@ export function HomePage() {
 
   return (
     <div className="space-y-4">
+      <Credits />
       <header className="flex items-center justify-between gap-3 pt-2 pb-1">
         <div className="min-w-0">
           <p className="text-sm text-ink/50 dark:text-white/50">{dayFmt.format(new Date())}</p>
