@@ -8,7 +8,6 @@ const out = process.argv[3] ?? 'shots'
 mkdirSync(out, { recursive: true })
 
 const phones = [
-  { name: 'tiny-320', width: 320, height: 568 },
   { name: 'small-360', width: 360, height: 760 },
   { name: 'regular-412', width: 412, height: 900 },
 ]
