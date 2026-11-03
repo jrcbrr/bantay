@@ -26,7 +26,7 @@ export function Sheet({ open, onClose, title, children }: Props) {
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="glass bg-paper/80! dark:bg-ink/80! fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[92dvh] max-w-lg overflow-y-auto overscroll-contain rounded-t-[2rem] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:bottom-6 md:rounded-[2rem]"
+            className="glass bg-paper/80! dark:bg-ink/80! fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[92dvh] max-w-lg overflow-y-auto rounded-t-[2rem] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:bottom-6 md:rounded-[2rem]"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

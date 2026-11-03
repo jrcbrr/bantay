@@ -39,7 +39,7 @@ export function HomePage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {visible.map((c) => (
           <div key={c.id} className={c.id === 'balance' || c.id === 'forecast' || c.id === 'recent' ? 'lg:col-span-2' : ''}>
             {dashboardCards[c.id].render({ money })}

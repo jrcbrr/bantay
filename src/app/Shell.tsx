@@ -80,12 +80,12 @@ export function Shell() {
         </NavLink>
       </aside>
 
-      <main className="safe-x mx-auto max-w-2xl pt-[max(1rem,env(safe-area-inset-top))] pb-32 md:ml-72 md:max-w-3xl md:pt-8 md:pb-12">
+      <main className="mx-auto max-w-2xl px-3 sm:px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-32 md:ml-72 md:max-w-3xl md:pt-8 md:pb-12">
         <Outlet />
       </main>
 
       {/* Mobile floating tab bar */}
-      <nav className="safe-x fixed inset-x-0 bottom-0 z-30 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 px-3 sm:px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
         <div className="glass mx-auto flex max-w-md items-center justify-between rounded-[2rem] px-2 py-2">
           {tabs.slice(0, 2).map((t) => (
             <TabLink key={t.to} {...t} />
@@ -122,7 +122,7 @@ function TabLink({ to, label, icon: Icon }: Tab) {
       }
     >
       <Icon className="h-[1.35rem] w-[1.35rem]" strokeWidth={2} />
-      <span className="max-w-full truncate">{label}</span>
+      {label}
     </NavLink>
   )
 }
