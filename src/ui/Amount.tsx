@@ -22,7 +22,7 @@ export function Amount({ value, sign, compact, className = '', tone = 'none' }: 
           : ''
       : ''
   return (
-    <span className={`tabular ${color} ${className}`} aria-label={hidden ? 'Amount hidden' : undefined}>
+    <span className={`tabular [overflow-wrap:break-word] ${color} ${className}`} aria-label={hidden ? 'Amount hidden' : undefined}>
       {hidden ? '₱****' : formatPHP(value, { sign, compact })}
     </span>
   )
