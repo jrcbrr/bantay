@@ -91,6 +91,40 @@
   }
 }
 
+/*
+ * Phone fit fixes. These sit outside @layer on purpose so they beat utility classes.
+ */
+
+/* iOS zooms the page when you focus an input under 16px, and it stays zoomed.
+   Inputs don't inherit the page size (they default to ~13px) and the base steps down
+   on narrow phones, so pin form fields at 16px or more. `.field-lg` opts out for
+   inputs that are already big (the Quick Add amount). */
+@media (pointer: coarse) {
+  input:not(.field-lg),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Nothing should ever make the page scroll sideways. */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Keep content out of the notch and rounded corners when the phone is sideways. */
+.safe-x {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+  .safe-x {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
 @keyframes shake {
   0%,
   100% {

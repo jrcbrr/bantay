@@ -249,7 +249,7 @@ export function QuickAddSheet() {
             role="dialog"
             aria-modal="true"
             aria-label={editing ? 'Edit transaction' : 'Add transaction'}
-            className="glass fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[92dvh] max-w-lg overflow-y-auto rounded-t-[2rem] bg-paper/80! p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:bottom-6 md:rounded-[2rem] dark:bg-ink/80!"
+            className="glass fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[92dvh] max-w-lg overflow-y-auto overscroll-contain rounded-t-[2rem] bg-paper/80! p-5 pb-0 md:bottom-6 md:rounded-[2rem] dark:bg-ink/80!"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -329,7 +329,7 @@ export function QuickAddSheet() {
                   value={amountText}
                   onChange={(e) => setAmountText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && void save()}
-                  className="tabular w-full bg-transparent text-5xl font-semibold tracking-tight outline-none placeholder:text-ink/20 dark:placeholder:text-white/20"
+                  className="field-lg tabular w-full min-w-0 bg-transparent text-5xl font-semibold tracking-tight outline-none placeholder:text-ink/20 dark:placeholder:text-white/20"
                 />
               </div>
             </label>
@@ -380,7 +380,7 @@ export function QuickAddSheet() {
                 placeholder="Note (e.g. McDo)"
                 value={note}
                 onChange={(e) => onNoteChange(e.target.value)}
-                className="flex-1 rounded-xl bg-ink/[0.05] px-3 py-2.5 text-sm outline-none dark:bg-white/[0.07]"
+                className="min-w-0 flex-1 rounded-xl bg-ink/[0.05] px-3 py-2.5 text-sm outline-none dark:bg-white/[0.07]"
               />
               <input
                 type="date"
@@ -390,7 +390,7 @@ export function QuickAddSheet() {
               />
             </div>
 
-            <div className="mt-5 flex gap-2">
+            <div className="sticky bottom-0 -mx-5 mt-3 flex gap-2 bg-paper/90 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] backdrop-blur-md dark:bg-ink/90">
               {editing && (
                 <button
                   onClick={() => void remove()}
