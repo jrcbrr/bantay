@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:compat": "node scripts/check-compat.mjs"
   },
   "dependencies": {
     "date-fns": "^4.1.0",
@@ -28,19 +29,25 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@csstools/postcss-cascade-layers": "^5.0.1",
     "@eslint/js": "^9.27.0",
     "@tailwindcss/vite": "^4.1.8",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-legacy": "^6.1.1",
     "@vitejs/plugin-react": "^4.5.0",
+    "browserslist": "^4.24.5",
     "eslint": "^9.27.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "fake-indexeddb": "^6.0.1",
     "globals": "^16.2.0",
+    "lightningcss": "^1.30.1",
+    "postcss": "^8.5.3",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^4.1.8",
+    "terser": "^5.39.2",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.33.0",
     "vite": "^6.3.5",
