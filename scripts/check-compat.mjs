@@ -13,6 +13,7 @@ if (/@layer\b/.test(css)) problems.push('CSS still has @layer blocks')
 const oklchOnly = (css.match(/[{;](?:[\w-]+):oklch\([^)]*\)/g) ?? []).length
 const dvh = (css.match(/\d+dvh/g) ?? []).length
 const vh = (css.match(/\d+vh/g) ?? []).length
+for (const m of css.matchAll(/[^{}]{0,80}\d+dvh[^{}]{0,20}/g)) console.log('  dvh in:', m[0])
 if (dvh > 0 && vh < dvh) problems.push(`only ${vh} vh fallbacks for ${dvh} dvh values`)
 if (!files.some((f) => f.includes('polyfills-legacy'))) problems.push('no legacy JS polyfills were built')
 
